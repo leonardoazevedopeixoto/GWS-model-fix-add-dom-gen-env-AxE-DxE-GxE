@@ -13,7 +13,7 @@
 ## Genotype file should contain just the SNPs
 
 ####################################################################
-setwd("D:\\Leonardo\\POSDOC")
+setwd("C:\\Users\\Leonardo\\Google Drive\\Simulação GWS\\Simulacao RILs\\Resultados")
 pdf.options(family="Helvetica", height=5, width= 10)
 pdf("Full model.pdf", pointsize=6)
 nfolds=5
@@ -35,17 +35,21 @@ geno<-read.table("RILgeno.txt", h=F)
 
 ##calculating alelic frequence 
 ##Creating a new matrix codified to run HapEstXXR
-geno1 = matrix(0,nrow=nrow(geno),ncol=ncol(geno))
+#geno1 = matrix(0,nrow=nrow(geno),ncol=ncol(geno))
 #
-idx = geno == 2
-geno1[idx] = 2
+#idx = geno == 2
+#geno1[idx] = 2
 #
-idx = geno == 1
-geno1[idx] = 3
+#idx = geno == 1
+#geno1[idx] = 3
 #
-idx = geno == 0
-geno1[idx] = 1
-colnames(geno1)<-colnames(geno)
+#idx = geno == 0
+#geno1[idx] = 1
+#colnames(geno1)<-colnames(geno)
+#dim(geno)
+Z = recode.genotype(M = geno)
+#dim(Z)
+
 newgen=data.frame(maf(geno1, marker.label=colnames(geno1)))
 freq<-cbind(((newgen[,1]+(newgen[,2]/2))/newgen[,4]), ((newgen[,3]+(newgen[,2]/2))/newgen[,4]))
 colnames(freq)<-c("p", "q")
@@ -56,68 +60,71 @@ pheno<-as.matrix(read.table("RILvalfen.txt", h=F))
 pheno1<-as.matrix(pheno[,4:ncol(pheno)])
 rownames(pheno1)<-seq(1,nrow(pheno1),1)
 nvariable=ncol(pheno)-3
+Nids = nrow(pheno)
 
-
-## Creating an incidence matrix for fixed effect 
-fix<-data.frame(as.factor(pheno[,3]))
-nfix<-table(fix)
-fix1<-Matrix(0,nrow=nrow(pheno), ncol=length(nfix), sparse= TRUE)
-for(i in 1:nrow(fix))
-{
-  for (j in 1:length(nfix))
-  {
-    if (fix[i,]==j){fix1[i,j]=1}
-  }
-}
-rownames(fix1)<-seq(1,nrow(pheno1),1)
-rm(fix)
+## Creating an incidence matrix for fixed effect
+fix1 = design.matrix(X = pheno[,3], Nids = Nids)
+#fix<-data.frame(as.factor(pheno[,3]))
+#nfix<-table(fix)
+#fix1<-Matrix(0,nrow=nrow(pheno), ncol=length(nfix), sparse= TRUE)
+#for(i in 1:nrow(fix))
+#{
+#  for (j in 1:length(nfix))
+#  {
+#    if (fix[i,]==j){fix1[i,j]=1}
+#  }
+#}
+#rownames(fix1)<-seq(1,nrow(pheno1),1)
+#rm(fix)
 
 ## Creating an incidence matrix for environment effect
-env<-data.frame(as.factor(pheno[,1]))
-nenv<-table(env)
+env1 = design.matrix(X = pheno[,1], Nids = Nids)
+#env<-data.frame(as.factor(pheno[,1]))
+#nenv<-table(env)
 
-env1<-Matrix(0,nrow=nrow(pheno), ncol=length(nenv), sparse= TRUE)
-for(i in 1:nrow(env))
-{
-  for (j in 1:length(nenv))
-  {
-    if (env[i,]==j){env1[i,j]=1}
-  }
-}
-rownames(env1)<-seq(1,nrow(pheno1),1)
-rm(env)
+#env1<-Matrix(0,nrow=nrow(pheno), ncol=length(nenv), sparse= TRUE)
+#for(i in 1:nrow(env))
+#{
+#  for (j in 1:length(nenv))
+#  {
+#    if (env[i,]==j){env1[i,j]=1}
+#  }
+#}
+#rownames(env1)<-seq(1,nrow(pheno1),1)
+#rm(env)
 
 ## Creating an incidence matrix for genetic effect
-gen<-data.frame(as.factor(pheno[,2]))
-ngen<-table(gen)
-gen1<-Matrix(0,nrow=nrow(pheno), ncol=length(ngen), sparse= TRUE)
-for(i in 1:nrow(gen))
-{
-  for (j in 1:length(ngen))
-  {
-    if (gen[i,]==j){gen1[i,j]=1}
-  }
-}
-rownames(gen1)<-seq(1,nrow(pheno1),1)
-rm(gen)
+gen1 = design.matrix(X = pheno[,1], Nids = Nids)
+#gen<-data.frame(as.factor(pheno[,2]))
+#ngen<-table(gen)
+#gen1<-Matrix(0,nrow=nrow(pheno), ncol=length(ngen), sparse= TRUE)
+#for(i in 1:nrow(gen))
+#{
+#  for (j in 1:length(ngen))
+#  {
+#    if (gen[i,]==j){gen1[i,j]=1}
+#  }
+#}
+#rownames(gen1)<-seq(1,nrow(pheno1),1)
+#rm(gen)
 
 ## Creating an incidence matrix for additive genetic effect
-add <- scale(geno,center=T,scale=F)
-rownames(add)<-seq(1,nrow(pheno1),1)
+add           <- scale(geno,center=T,scale=F)
+rownames(add) <- 1:Nids #seq(1,nrow(pheno1),1)
 
 ## Creating an incidence matrix for dominance genetic effect
-dom<-matrix(0,nrow=nrow(geno),ncol=ncol(geno))
-for (j in 1:nrow(geno))
-{
-  for (i in 1:ncol(geno))
-  {
-    if(geno[j,i] == 2){dom[j,i] = -2*((freq[i,2])^2)}
-    if(geno[j,i] == 1){dom[j,i] = 2*(freq[i,2]*freq[i,1])}
-    if(geno[j,i] == 0){dom[j,i] = -2*((freq[i,1])^2)}
-  }
-}
-rownames(dom)<-seq(1,nrow(pheno1),1)
-rm(geno)
+#dom <- matrix(0,nrow=nrow(geno),ncol=ncol(geno))
+dom <- scale.dom(X = geno)
+
+#for (j in 1:nrow(geno)){
+#  for (i in 1:ncol(geno)){
+#    if(geno[j,i] == 2){dom[j,i] = -2*((freq[i,2])^2)}
+#    if(geno[j,i] == 1){dom[j,i] = 2*(freq[i,2]*freq[i,1])}
+#    if(geno[j,i] == 0){dom[j,i] = -2*((freq[i,1])^2)}
+#  }
+#}
+#rownames(dom)<-seq(1,nrow(pheno1),1)
+#rm(geno)
 
 ## Creating the incidence matrix of GeneticxEnvironment effect
 GxE<-Matrix(0,nrow=nrow(pheno), ncol=length(ngen)*length(nenv), sparse= TRUE)
