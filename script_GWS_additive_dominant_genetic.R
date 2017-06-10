@@ -18,16 +18,15 @@ pdf.options(family="Helvetica", height=5, width= 10)
 pdf("Full model.pdf", pointsize=6)
 nfolds=5
 niteraction=2
-nIter=nIter
-burmIm=burnIn
-thin=thin
+nIter=250000
+burmIm=20000
+thin=10
 
 library(BGLR)
+library(rrBLUP)
 library(boa)
 library(TeachingDemos)
 library(HapEstXXR)
-library(foreach)
-library(doParallel)
 library(Matrix)
 
 ## Reading genotype file
@@ -50,10 +49,10 @@ geno<-read.table("RILgeno.txt", h=F)
 Z = recode.genotype(M = geno)
 #dim(Z)
 
-newgen=data.frame(maf(geno1, marker.label=colnames(geno1)))
+newgen=data.frame(maf(Z, marker.label=colnames(Z)))
 freq<-cbind(((newgen[,1]+(newgen[,2]/2))/newgen[,4]), ((newgen[,3]+(newgen[,2]/2))/newgen[,4]))
 colnames(freq)<-c("p", "q")
-rm(geno1, newgen)
+rm(Z, newgen)
 
 ## Reading phenotype file
 pheno<-as.matrix(read.table("RILvalfen.txt", h=F))
@@ -63,7 +62,7 @@ nvariable=ncol(pheno)-3
 Nids = nrow(pheno)
 
 ## Creating an incidence matrix for fixed effect
-fix1 = design.matrix(X = pheno[,3], Nids = Nids)
+fix = design.matrix(X = pheno[,3], Nids = Nids)
 #fix<-data.frame(as.factor(pheno[,3]))
 #nfix<-table(fix)
 #fix1<-Matrix(0,nrow=nrow(pheno), ncol=length(nfix), sparse= TRUE)
@@ -78,7 +77,7 @@ fix1 = design.matrix(X = pheno[,3], Nids = Nids)
 #rm(fix)
 
 ## Creating an incidence matrix for environment effect
-env1 = design.matrix(X = pheno[,1], Nids = Nids)
+env = design.matrix(X = pheno[,1], Nids = Nids)
 #env<-data.frame(as.factor(pheno[,1]))
 #nenv<-table(env)
 
@@ -94,7 +93,7 @@ env1 = design.matrix(X = pheno[,1], Nids = Nids)
 #rm(env)
 
 ## Creating an incidence matrix for genetic effect
-gen1 = design.matrix(X = pheno[,1], Nids = Nids)
+gen = design.matrix(X = pheno[,2], Nids = Nids)
 #gen<-data.frame(as.factor(pheno[,2]))
 #ngen<-table(gen)
 #gen1<-Matrix(0,nrow=nrow(pheno), ncol=length(ngen), sparse= TRUE)
@@ -127,35 +126,41 @@ dom <- scale.dom(X = geno)
 #rm(geno)
 
 ## Creating the incidence matrix of GeneticxEnvironment effect
-GxE<-Matrix(0,nrow=nrow(pheno), ncol=length(ngen)*length(nenv), sparse= TRUE)
+GxE <- design.interaction(M=gen, X=env)
 
-for(i in 1:nrow(pheno))
-{
-  GxE[i,]<-Matrix(kronecker(env1[i,], gen1[i,]), sparse= TRUE)
-}
-rownames(GxE)<-seq(1,nrow(pheno1),1)
+#GxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(gen)*ncol(env), sparse= TRUE)
+
+#for(i in 1:nrow(pheno))
+#{
+#  GxE[i,]<-Matrix(kronecker(env[i,], gen[i,]), sparse= TRUE)
+#}
+#rownames(GxE)<-seq(1,nrow(pheno1),1)
 
 ## Creating the incidence matrix of AdditivexEnvironment effect
-AxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(add)*length(nenv))
-for(i in 1:nrow(pheno))
-{
-  AxE[i,]<-Matrix(kronecker(env1[i,], add[i,]), sparse= TRUE)
-}
-rownames(AxE)<-seq(1,nrow(pheno1),1)
+AxE <- design.interaction(M=add, X=env)
+
+#AxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(add)*length(nenv))
+#for(i in 1:nrow(pheno))
+#{
+#  AxE[i,]<-Matrix(kronecker(env1[i,], add[i,]), sparse= TRUE)
+#}
+#rownames(AxE)<-seq(1,nrow(pheno1),1)
 
 ## Creating the incidence matrix of DominancexEnvironment effect
-DxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(dom)*length(nenv))
+DxE <- design.interaction(M=dom, X=env)
 
-for(i in 1:nrow(pheno))
-{
-  DxE[i,]<-Matrix(kronecker(env1[i,], dom[i,]))
-}
-rownames(DxE)<-seq(1,nrow(pheno1),1)
+#DxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(dom)*length(nenv))
+
+#for(i in 1:nrow(pheno))
+#{
+#  DxE[i,]<-Matrix(kronecker(env1[i,], dom[i,]))
+#}
+#rownames(DxE)<-seq(1,nrow(pheno1),1)
 
 ## Defining how many subsets (folds) will be used to run the analysis
-subset<-cut(seq(1,nrow(fix1)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(env1)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(gen1)),breaks=nfolds,labels=FALSE)
+subset<-cut(seq(1,nrow(fix)),breaks=nfolds,labels=FALSE)
+subset<-cut(seq(1,nrow(env)),breaks=nfolds,labels=FALSE)
+subset<-cut(seq(1,nrow(gen)),breaks=nfolds,labels=FALSE)
 subset<-cut(seq(1,nrow(add)),breaks=nfolds,labels=FALSE)
 subset<-cut(seq(1,nrow(dom)),breaks=nfolds,labels=FALSE)
 subset<-cut(seq(1,nrow(GxE)),breaks=nfolds,labels=FALSE)
@@ -253,7 +258,7 @@ for (i in 1:nvariable)
       DxEtrain<-DxE2[-testIndexes,] ## GxE effect matrix to train 
       DxEtest<-DxE2[testIndexes,]  ## GxE effect matrix to validate 
       
-      ETA=list(list(X=fixtrain, model = "FIXED"),
+      ETA=list(list(X=fixtrain, model = model),
                list(X=envtrain, model = "BRR"),
                list(X=gentrain, model = "BRR"),
                list(X=addtrain, model = "BRR"),
@@ -583,25 +588,27 @@ for (i in 1:nvariable)
   print(mean(DIC))
   cat("\n")
   
-  ##Calculating the geentic value for all full-sib families
-  genetic_value<-data.frame(pheno[,1:3],add%*%rowMeans(additive_effects))
-  colnames(genetic_value)<-c("Env", "Gen", "Blo", "GV")
-  genetic_value1<-genetic_value[order(genetic_value$Env),]
-  family_genetic_value<-matrix(nrow=ncol(gen1), ncol=1)
-  for (x in 1:ncol(gen1))
-  {
-    fgv<-matrix(0,nrow=nrow(pheno1), ncol=1)
-    for (y in 1:nrow(pheno1))
-    {
-      if (genetic_value1[y,2]==x){fgv[y,1]=genetic_value1[y,4]}
-    }
-    family_genetic_value[x,1]<-sum(fgv)/ncol(env1)*ncol(fix1)
-  }
-  rownames(family_genetic_value)<-seq(1, max(pheno[,2]), 1)
-  cat("-----Genetic value for each family:", "\n") 
-  print(family_genetic_value)
+  ##Calculating the genetic value for all families
+  family_genotypic_value= family.pred(X=pheno1, Z=add, W=dom, k=additive_effects, r=dominance_effects, add=TRUE, dom=TRUE)
+  
+  #genetic_value<-data.frame(pheno[,1:3],add%*%rowMeans(additive_effects))
+  #colnames(genetic_value)<-c("Env", "Gen", "Blo", "GV")
+  #genetic_value1<-genetic_value[order(genetic_value$Env),]
+  #family_genetic_value<-matrix(nrow=ncol(gen1), ncol=1)
+  #for (x in 1:ncol(gen1))
+  #{
+  #  fgv<-matrix(0,nrow=nrow(pheno1), ncol=1)
+  #  for (y in 1:nrow(pheno1))
+  #  {
+  #    if (genetic_value1[y,2]==x){fgv[y,1]=genetic_value1[y,4]}
+  #  }
+  #  family_genetic_value[x,1]<-sum(fgv)/ncol(env1)*ncol(fix1)
+  #}
+  #rownames(family_genetic_value)<-seq(1, max(pheno[,2]), 1)
+  cat("-----Genotypic value for each family:", "\n") 
+  print(family_genotypic_value)
   cat("-----Highest Posterior Density Intervals:", "\n") 
-  print(emp.hpd(family_genetic_value[,1]))
+  print(emp.hpd(family_genotypic_value[,1]))
   cat("\n")
   
   ##Calculating the genetic value for all individuals
