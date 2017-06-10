@@ -1,1 +1,3 @@
-# GWS-model-fix-add-dom-gen-env-AxE-DxE-GxE
+GWS Model code with multiple markers matrices
+
+This code aims to provide the computation of marker effects using BGLR.....
