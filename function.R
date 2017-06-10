@@ -1,10 +1,28 @@
 
+
+model <- function(model){
+  if (model=="FIXED"){model=model}
+}
+
+effect.pred <- function(X, a){
+  effect<-matrix(X%*%rowMeans(a))
+  return(effect)
+}
+
+ind.pred <- function (X, G, A, D, GE, AE, DE){
+  genetic_GxE_value<-data.frame(pheno[,1:3],matrix((gen1%*%rowMeans(genetic_effects)+add%*%rowMeans(additive_effects)+
+                                                      dom%*%rowMeans(dominance_effects)+GxE%*%rowMeans(GeneticxEnvironment_effects)+
+                                                      AxE%*%rowMeans(AdditivexEnvironment_effects)+DxE%*%rowMeans(DominancexEnvironment_effects))))
+  colnames(genetic_GxE_value)<-c("Env", "Gen", "Blo", "GV")
+  genetic_GxE_value1<-genetic_GxE_value[order(genetic_GxE_value$Env),]
+}
+
 family.pred <- function (X, Z, W, k, r, add, dom){
-  if (add = TRUE & dom = FALSE){genotypic_value<-data.frame(X[,1:3],Z%*%rowMeans(k))
+  if (add = TRUE & dom = FALSE){genotypic_value<-data.frame(X[,1:3],effect.pred(X=A, a=k))
   colnames(genotypic_value)<-c("Env", "Gen", "Blo", "GV")}
-  else if (add = TRUE & dom = TRUE){genotypic_value<-data.frame(X[,1:3],Z%*%rowMeans(k), W%*%rowMeans(r))
+  else if (add = TRUE & dom = TRUE){genotypic_value<-data.frame(X[,1:3],effect.pred(X=A, a=k), effect.pred(X=W, a=r))
   colnames(genotypic_value)<-c("Env", "Gen", "Blo", "GV")}
-  else if (add = FALSE & dom = TRUE){genotypic_value<-data.frame(X[,1:3],W%*%rowMeans(r))
+  else if (add = FALSE & dom = TRUE){genotypic_value<-data.frame(X[,1:3],effect.pred(X=W, a=r))
   colnames(genotypic_value)<-c("Env", "Gen", "Blo", "GV")}
   genotypic_value1<-genotypic_value[order(genotypic_value$Env),]
   lev  = unique(X[,2])
