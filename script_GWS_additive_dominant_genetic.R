@@ -13,15 +13,24 @@
 ## Genotype file should contain just the SNPs
 
 ####################################################################
-setwd("C:\\Users\\Leonardo\\Google Drive\\Simulação GWS\\Simulacao RILs\\Resultados")
-pdf.options(family="Helvetica", height=5, width= 10)
-pdf("Full model.pdf", pointsize=6)
-nfolds=5
-niteraction=2
-nIter=250000
-burmIm=20000
-thin=10
+## Model file should have eight rows which each row has one model for the follow effects
+## Fixed, environment, genetic (traditional BLUP), additive (markers), dominance (markers),
+## GenxEnv, AddxEnv, DomxEnv
+## If your model there is no one of these effects type NULL in the model file for the respective line
+## Users can choose any model that there is in BGLR package such as FIXED, BRR, BA, BB, BC, and BL
 
+####################################################################
+setwd("C:\\Users\\Leonardo\\Google Drive\\Simulação GWS\\Simulacao RILs\\Resultados")
+
+## Reading genotype file
+geno<-read.table("RILgeno.txt", h=F)
+
+## Reading phenotype file
+pheno<-as.matrix(read.table("RILvalfen.txt", h=F))
+
+model<-read.table("model.txt", h=F)
+
+library(argparse)
 library(BGLR)
 library(rrBLUP)
 library(boa)
@@ -29,104 +38,65 @@ library(TeachingDemos)
 library(HapEstXXR)
 library(Matrix)
 
-## Reading genotype file
-geno<-read.table("RILgeno.txt", h=F)
+nfolds=5
+niteraction=2
+nIter=250000
+burmIm=20000
+thin=10
+
+Fix = TRUE
+Env = TRUE
+Gen = TRUE
+Add = TRUE
+Dom = TRUE
+X  = pheno
+
+args <- list('X' = X , 'fix' = NULL , 'env' = NULL , 'gen' = NULL , 'add' = NULL , 'dom' = NULL ,
+             'GxE' = NULL , 'AxE' = NULL , 'DxE' = NULL , 'fixtest' = NULL, 'envtest' = NULL, 
+             'gentest' = NULL, 'addtest' = NULL, 'domtest' = NULL, 'GxEtest' = NULL, 
+             'AxEtest' = NULL, 'DxEtest' = NULL, 'fixed_effects' = NULL , 'environment_effects' = NULL ,
+             'genetic_effects' = NULL , 'additive_effects' = NULL , 'dominance_effects' = NULL , 
+             'AdditivexEnvironment_effects' = NULL , 'DominancexEnvironment_effects' = NULL ,
+             'GeneticxEnvironment_effects' = NULL , 'fix_effect' = NULL, 'env_effect' = NULL,
+             'gen_effect' = NULL, 'add_effect' = NULL, 'dom_effect' = NULL, 'GxE_effect' = NULL, 
+             'AxE_effect' = NULL, 'DxE_effect' = NULL, 'fix' = Fix, 'env' = Env, 'gen' = Gen,
+             'add' = Add, 'dom' = Dom )
+
+
+pdf.options(family="Helvetica", height=5, width= 10)
+pdf("Full model.pdf", pointsize=6)
 
 ##calculating alelic frequence 
-##Creating a new matrix codified to run HapEstXXR
-#geno1 = matrix(0,nrow=nrow(geno),ncol=ncol(geno))
-#
-#idx = geno == 2
-#geno1[idx] = 2
-#
-#idx = geno == 1
-#geno1[idx] = 3
-#
-#idx = geno == 0
-#geno1[idx] = 1
-#colnames(geno1)<-colnames(geno)
-#dim(geno)
 Z = recode.genotype(M = geno)
-#dim(Z)
 
 newgen=data.frame(maf(Z, marker.label=colnames(Z)))
 freq<-cbind(((newgen[,1]+(newgen[,2]/2))/newgen[,4]), ((newgen[,3]+(newgen[,2]/2))/newgen[,4]))
 colnames(freq)<-c("p", "q")
 rm(Z, newgen)
 
-## Reading phenotype file
-pheno<-as.matrix(read.table("RILvalfen.txt", h=F))
 pheno1<-as.matrix(pheno[,4:ncol(pheno)])
 rownames(pheno1)<-seq(1,nrow(pheno1),1)
 nvariable=ncol(pheno)-3
 Nids = nrow(pheno)
 
 ## Creating an incidence matrix for fixed effect
-fix = design.matrix(X = pheno[,3], Nids = Nids)
-#fix<-data.frame(as.factor(pheno[,3]))
-#nfix<-table(fix)
-#fix1<-Matrix(0,nrow=nrow(pheno), ncol=length(nfix), sparse= TRUE)
-#for(i in 1:nrow(fix))
-#{
-#  for (j in 1:length(nfix))
-#  {
-#    if (fix[i,]==j){fix1[i,j]=1}
-#  }
-#}
-#rownames(fix1)<-seq(1,nrow(pheno1),1)
-#rm(fix)
+if (Fix) {fix = design.matrix(X = pheno[,3], Nids = Nids)}
 
 ## Creating an incidence matrix for environment effect
-env = design.matrix(X = pheno[,1], Nids = Nids)
-#env<-data.frame(as.factor(pheno[,1]))
-#nenv<-table(env)
-
-#env1<-Matrix(0,nrow=nrow(pheno), ncol=length(nenv), sparse= TRUE)
-#for(i in 1:nrow(env))
-#{
-#  for (j in 1:length(nenv))
-#  {
-#    if (env[i,]==j){env1[i,j]=1}
-#  }
-#}
-#rownames(env1)<-seq(1,nrow(pheno1),1)
-#rm(env)
+if (Env) {env = design.matrix(X = pheno[,1], Nids = Nids)}
 
 ## Creating an incidence matrix for genetic effect
-gen = design.matrix(X = pheno[,2], Nids = Nids)
-#gen<-data.frame(as.factor(pheno[,2]))
-#ngen<-table(gen)
-#gen1<-Matrix(0,nrow=nrow(pheno), ncol=length(ngen), sparse= TRUE)
-#for(i in 1:nrow(gen))
-#{
-#  for (j in 1:length(ngen))
-#  {
-#    if (gen[i,]==j){gen1[i,j]=1}
-#  }
-#}
-#rownames(gen1)<-seq(1,nrow(pheno1),1)
-#rm(gen)
+if (Gen) {gen = design.matrix(X = pheno[,2], Nids = Nids)}
 
 ## Creating an incidence matrix for additive genetic effect
-add           <- scale(geno,center=T,scale=F)
-rownames(add) <- 1:Nids #seq(1,nrow(pheno1),1)
+if (Add) {add           <- scale(geno,center=T,scale=F)
+rownames(add) <- 1:Nids}
 
 ## Creating an incidence matrix for dominance genetic effect
-#dom <- matrix(0,nrow=nrow(geno),ncol=ncol(geno))
-dom <- scale.dom(X = geno)
-
-#for (j in 1:nrow(geno)){
-#  for (i in 1:ncol(geno)){
-#    if(geno[j,i] == 2){dom[j,i] = -2*((freq[i,2])^2)}
-#    if(geno[j,i] == 1){dom[j,i] = 2*(freq[i,2]*freq[i,1])}
-#    if(geno[j,i] == 0){dom[j,i] = -2*((freq[i,1])^2)}
-#  }
-#}
-#rownames(dom)<-seq(1,nrow(pheno1),1)
-#rm(geno)
+if (Dom) {dom <- scale.dom(X = geno)}
 
 ## Creating the incidence matrix of GeneticxEnvironment effect
-GxE <- design.interaction(M=gen, X=env)
+if (Gen & Env) {GxE <- design.interaction(Z=gen, W=env)}
 
 #GxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(gen)*ncol(env), sparse= TRUE)
 
@@ -137,7 +107,7 @@ GxE <- design.interaction(M=gen, X=env)
 #rownames(GxE)<-seq(1,nrow(pheno1),1)
 
 ## Creating the incidence matrix of AdditivexEnvironment effect
-AxE <- design.interaction(M=add, X=env)
+if (Add & Env) {AxE <- design.interaction(Z=add, W=env)}
 
 #AxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(add)*length(nenv))
 #for(i in 1:nrow(pheno))
@@ -147,7 +117,7 @@ AxE <- design.interaction(M=add, X=env)
 #rownames(AxE)<-seq(1,nrow(pheno1),1)
 
 ## Creating the incidence matrix of DominancexEnvironment effect
-DxE <- design.interaction(M=dom, X=env)
+if (Dom & Env) {DxE <- design.interaction(M=dom, X=env)}
 
 #DxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(dom)*length(nenv))
 
@@ -158,14 +128,14 @@ DxE <- design.interaction(M=dom, X=env)
 #rownames(DxE)<-seq(1,nrow(pheno1),1)
 
 ## Defining how many subsets (folds) will be used to run the analysis
-subset<-cut(seq(1,nrow(fix)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(env)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(gen)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(add)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(dom)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(GxE)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(AxE)),breaks=nfolds,labels=FALSE)
-subset<-cut(seq(1,nrow(DxE)),breaks=nfolds,labels=FALSE)
+if (Fix) {subset<-cut(seq(1,nrow(fix)),breaks=nfolds,labels=FALSE)}
+if (Env) {subset<-cut(seq(1,nrow(env)),breaks=nfolds,labels=FALSE)}
+if (Gen) {subset<-cut(seq(1,nrow(gen)),breaks=nfolds,labels=FALSE)}
+if (Add) {subset<-cut(seq(1,nrow(add)),breaks=nfolds,labels=FALSE)}
+if (Dom) {subset<-cut(seq(1,nrow(dom)),breaks=nfolds,labels=FALSE)}
+if (Gen & Env) {subset<-cut(seq(1,nrow(GxE)),breaks=nfolds,labels=FALSE)}
+if (Add & Env) {subset<-cut(seq(1,nrow(AxE)),breaks=nfolds,labels=FALSE)}
+if (Dom & Env) {subset<-cut(seq(1,nrow(DxE)),breaks=nfolds,labels=FALSE)}
 subset<-cut(seq(1,nrow(pheno1)),breaks=nfolds,labels=FALSE)
 
 ## Run bayesian analysis
@@ -234,38 +204,38 @@ for (i in 1:nvariable)
       phenotrain<-pheno2[-testIndexes, ] ## fixed effect matrix to train 
       phenotest<-pheno2[testIndexes, ] ## fixed effect matrix to validate 
       
-      fixtrain<-fix2[-testIndexes, ] ## fixed effect matrix to train 
-      fixtest<-fix2[testIndexes, ] ## fixed effect matrix to validate 
+      if (Fix) {fixtrain<-fix2[-testIndexes, ] ## fixed effect matrix to train 
+      fixtest<-fix2[testIndexes, ]} ## fixed effect matrix to validate 
       
-      envtrain<-env2[-testIndexes,] ## enviroment effect matrix to train 
-      envtest<-env2[testIndexes,]  ## enviroment effect matrix to validate 
+      if (Env) {envtrain<-env2[-testIndexes,] ## enviroment effect matrix to train 
+      envtest<-env2[testIndexes,]}  ## enviroment effect matrix to validate 
       
-      gentrain<-gen2[-testIndexes,] ## genetic effect matrix to train 
-      gentest<-gen2[testIndexes,] ## genetic effect matrix to validate 
+      if (Gen) {gentrain<-gen2[-testIndexes,] ## genetic effect matrix to train 
+      gentest<-gen2[testIndexes,]} ## genetic effect matrix to validate 
       
-      addtrain<-add2[-testIndexes,] ## additive effect matrix to train 
-      addtest<-add2[testIndexes,] ## additive effect matrix to validate 
+      if (Add) {addtrain<-add2[-testIndexes,] ## additive effect matrix to train 
+      addtest<-add2[testIndexes,]} ## additive effect matrix to validate 
       
-      domtrain<-dom2[-testIndexes,] ## dominance effect matrix to train 
-      domtest<-dom2[testIndexes,] ## dominance effect matrix to validate 
+      if (Dom) {domtrain<-dom2[-testIndexes,] ## dominance effect matrix to train 
+      domtest<-dom2[testIndexes,]} ## dominance effect matrix to validate 
       
-      GxEtrain<-GxE2[-testIndexes,] ## GxE effect matrix to train 
-      GxEtest<-GxE2[testIndexes,]  ## GxE effect matrix to validate 
+      if (Gen & Env) {GxEtrain<-GxE2[-testIndexes,] ## GxE effect matrix to train 
+      GxEtest<-GxE2[testIndexes,]}  ## GxE effect matrix to validate 
       
-      AxEtrain<-AxE2[-testIndexes,] ## GxE effect matrix to train 
-      AxEtest<-AxE2[testIndexes,]  ## GxE effect matrix to validate 
+      if (Add & Env) {AxEtrain<-AxE2[-testIndexes,] ## GxE effect matrix to train 
+      AxEtest<-AxE2[testIndexes,]}  ## GxE effect matrix to validate 
       
-      DxEtrain<-DxE2[-testIndexes,] ## GxE effect matrix to train 
-      DxEtest<-DxE2[testIndexes,]  ## GxE effect matrix to validate 
+      if (Dom & Env) {DxEtrain<-DxE2[-testIndexes,] ## GxE effect matrix to train 
+      DxEtest<-DxE2[testIndexes,]}  ## GxE effect matrix to validate 
       
-      ETA=list(list(X=fixtrain, model = model),
-               list(X=envtrain, model = "BRR"),
-               list(X=gentrain, model = "BRR"),
-               list(X=addtrain, model = "BRR"),
-               list(X=domtrain, model = "BRR"),
-               list(X=GxEtrain, model = "BRR"),
-               list(X=AxEtrain, model = "BRR"),
-               list(X=DxEtrain, model = "BRR"))
+      ETA=list(if(Fix) {list(X=fixtrain, model = model[1,])},
+               if(Env) {list(X=envtrain, model = model[2,])},
+               if(Gen) {list(X=gentrain, model = model[3,])},
+               if(Add) {list(X=addtrain, model = model[4,])},
+               if(Dom) {list(X=domtrain, model = model[5,])},
+               if(Env & Gen) {list(X=GxEtrain, model = model[6,])},
+               if(Env & Add) {list(X=AxEtrain, model = model[7,])},
+               if(Env & Dom) {list(X=DxEtrain, model = model[8,])})
       results<-BGLR(y=phenotrain, response_type= "gaussian",
                     ETA=ETA,
                     nIter=5000, burnIn=1000, thin=1,
@@ -273,36 +243,286 @@ for (i in 1:nvariable)
       
       ## Genetic Estimate Breeding Value
       residual_variance[j,k]= mean(results$varE) #residual variance
-      environment_variance[j,k]= mean(results$ETA[[2]]$varB)
-      genetic_variance[j,k]= mean(results$ETA[[3]]$varB)
-      additive_variance[j,k]= mean(results$ETA[[4]]$varB)
-      dominance_variance[j,k]= mean(results$ETA[[5]]$varB)
-      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[6]]$varB)
-      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[7]]$varB)
-      DominancexEnvironment_variance[j,k]= mean(results$ETA[[8]]$varB)
-      fix_effect[,k]<-as.matrix(results$ETA[[1]]$b)
+      
+      if (env) {environment_variance[j,k]= mean(results$ETA[[1]]$varB)
+      env_effect[,k]<-as.matrix(results$ETA[[1]]$b)
+      env_SD_effect[,k]<-as.matrix(results$ETA[[1]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      }
+      if (gen) {genetic_variance[j,k]= mean(results$ETA[[1]]$varB)
+      gen_effect[,k]<-as.matrix(results$ETA[[1]]$b)
+      gen_SD_effect[,k]<-as.matrix(results$ETA[[1]]$SD.b)
+      varGEN<-scan('resultsETA_1_varB.dat')
+      }
+      if (add) {additive_variance[j,k]= mean(results$ETA[[1]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[1]]$b)
+      add_SD_effect[,k]<-as.matrix(results$ETA[[1]]$SD.b)
+      varADD<-scan('resultsETA_1_varB.dat')
+      }
+      if (dom) {dominance_variance[j,k]= mean(results$ETA[[1]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[1]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[1]]$SD.b)
+      varDOM<-scan('resultsETA_1_varB.dat')
+      }
+      if (env & fix) {environment_variance[j,k]= mean(results$ETA[[2]]$varB)
       env_effect[,k]<-as.matrix(results$ETA[[2]]$b)
-      gen_effect[,k]<-as.matrix(results$ETA[[3]]$b)
-      add_effect[,k]<-as.matrix(results$ETA[[4]]$b)
-      dom_effect[,k]<-as.matrix(results$ETA[[5]]$b)
-      GxE_effect[,k]<-as.matrix(results$ETA[[6]]$b)
-      AxE_effect[,k]<-as.matrix(results$ETA[[7]]$b)
-      DxE_effect[,k]<-as.matrix(results$ETA[[8]]$b)
       env_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      varENV<-scan('resultsETA_2_varB.dat')
+      }
+      if (gen & fix) {genetic_variance[j,k]= mean(results$ETA[[2]]$varB)
+      gen_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      gen_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      varGEN<-scan('resultsETA_2_varB.dat')
+      }
+      if (gen & env) {genetic_variance[j,k]= mean(results$ETA[[2]]$varB)
+      gen_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      gen_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[3]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      GxE_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      varGEN<-scan('resultsETA_2_varB.dat')
+      varGxE<-scan('resultsETA_3_varB.dat')
+      }
+      if (add & fix) {additive_variance[j,k]= mean(results$ETA[[2]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      add_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      varADD<-scan('resultsETA_2_varB.dat')
+      }
+      if (add & env) {additive_variance[j,k]= mean(results$ETA[[2]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      add_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[3]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      AxE_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      varADD<-scan('resultsETA_2_varB.dat')
+      }
+      if (add & gen) {additive_variance[j,k]= mean(results$ETA[[2]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      add_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      varGEN<-scan('resultsETA_1_varB.dat')
+      varADD<-scan('resultsETA_2_varB.dat')
+      }
+      if (dom & add) {dominance_variance[j,k]= mean(results$ETA[[2]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      varADD<-scan('resultsETA_1_varB.dat')
+      varDOM<-scan('resultsETA_2_varB.dat')
+      }
+      if (dom & gen) {dominance_variance[j,k]= mean(results$ETA[[2]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      varGEN<-scan('resultsETA_1_varB.dat')
+      varDOM<-scan('resultsETA_2_varB.dat')
+      }
+      if (dom & env) {dominance_variance[j,k]= mean(results$ETA[[2]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[3]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      DxE_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      varDOM<-scan('resultsETA_2_varB.dat')
+      }
+      if (dom & fix) {dominance_variance[j,k]= mean(results$ETA[[2]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[2]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[2]]$SD.b)
+      varDOM<-scan('resultsETA_2_varB.dat')
+      }
+      if (gen & env & fix) {genetic_variance[j,k]= mean(results$ETA[[3]]$varB)
+      gen_effect[,k]<-as.matrix(results$ETA[[3]]$b)
       gen_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[4]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      GxE_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      varENV<-scan('resultsETA_2_varB.dat')
+      varGEN<-scan('resultsETA_3_varB.dat')
+      varGxE<-scan('resultsETA_3_varB.dat')
+      }
+      if (add & env & fix) {additive_variance[j,k]= mean(results$ETA[[3]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      add_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[4]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      AxE_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      varENV<-scan('resultsETA_2_varB.dat')
+      varADD<-scan('resultsETA_3_varB.dat')
+      }
+      if (add & gen & env) {additive_variance[j,k]= mean(results$ETA[[3]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      add_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[4]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      GxE_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[5]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[5]]$b)
+      AxE_SD_effect[,k]<-as.matrix(results$ETA[[5]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      varGEN<-scan('resultsETA_2_varB.dat')
+      varADD<-scan('resultsETA_3_varB.dat')
+      varGxE<-scan('resultsETA_4_varB.dat')
+      }
+      if (add & gen & fix) {additive_variance[j,k]= mean(results$ETA[[3]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      add_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      varGEN<-scan('resultsETA_2_varB.dat')
+      varADD<-scan('resultsETA_3_varB.dat')
+      }
+      if (dom & gen & fix) {dominance_variance[j,k]= mean(results$ETA[[3]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      varGEN<-scan('resultsETA_2_varB.dat')
+      varDOM<-scan('resultsETA_3_varB.dat')
+      }
+      if (dom & gen & env) {dominance_variance[j,k]= mean(results$ETA[[3]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[4]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      GxE_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[5]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[5]]$b)
+      DxE_SD_effect[,k]<-as.matrix(results$ETA[[5]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      varGEN<-scan('resultsETA_2_varB.dat')
+      varDOM<-scan('resultsETA_3_varB.dat')
+      varGxE<-scan('resultsETA_4_varB.dat')
+      }
+      if (dom & add & fix) {dominance_variance[j,k]= mean(results$ETA[[3]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      varADD<-scan('resultsETA_2_varB.dat')
+      varDOM<-scan('resultsETA_3_varB.dat')
+      }
+      if (dom & add & env) {dominance_variance[j,k]= mean(results$ETA[[3]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[4]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      AxE_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[5]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[5]]$b)
+      DxE_SD_effect[,k]<-as.matrix(results$ETA[[5]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      varADD<-scan('resultsETA_2_varB.dat')
+      varDOM<-scan('resultsETA_3_varB.dat')
+      }
+      if (dom & add & gen) {dominance_variance[j,k]= mean(results$ETA[[3]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      varGEN<-scan('resultsETA_1_varB.dat')
+      varADD<-scan('resultsETA_2_varB.dat')
+      varDOM<-scan('resultsETA_3_varB.dat')
+      }
+      if (dom & env & fix) {dominance_variance[j,k]= mean(results$ETA[[3]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[3]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[3]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[4]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      DxE_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      varENV<-scan('resultsETA_2_varB.dat')
+      varDOM<-scan('resultsETA_3_varB.dat')
+      }
+      if (add & gen & env & fix) {additive_variance[j,k]= mean(results$ETA[[4]]$varB)
+      add_effect[,k]<-as.matrix(results$ETA[[4]]$b)
       add_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[5]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[5]]$b)
+      GxE_SD_effect[,k]<-as.matrix(results$ETA[[5]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[6]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[6]]$b)
+      AxE_SD_effect[,k]<-as.matrix(results$ETA[[6]]$SD.b)
+      varENV<-scan('resultsETA_2_varB.dat')
+      varGEN<-scan('resultsETA_3_varB.dat')
+      varADD<-scan('resultsETA_4_varB.dat')
+      varGxE<-scan('resultsETA_5_varB.dat')
+      }
+      if (dom & gen & env & fix) {dominance_variance[j,k]= mean(results$ETA[[4]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[4]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      GxE_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[6]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[6]]$b)
+      DxE_SD_effect[,k]<-as.matrix(results$ETA[[6]]$SD.b)
+      varENV<-scan('resultsETA_2_varB.dat')
+      varGEN<-scan('resultsETA_3_varB.dat')
+      varDOM<-scan('resultsETA_4_varB.dat')
+      varGxE<-scan('resultsETA_5_varB.dat')
+      }
+      if (dom & add & env & fix) {dominance_variance[j,k]= mean(results$ETA[[4]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[5]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[5]]$b)
+      AxE_SD_effect[,k]<-as.matrix(results$ETA[[5]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[6]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[6]]$b)
+      DxE_SD_effect[,k]<-as.matrix(results$ETA[[6]]$SD.b)
+      varENV<-scan('resultsETA_2_varB.dat')
+      varADD<-scan('resultsETA_3_varB.dat')
+      varDOM<-scan('resultsETA_4_varB.dat')
+      }
+      if (dom & add & gen & fix) {dominance_variance[j,k]= mean(results$ETA[[4]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      varGEN<-scan('resultsETA_2_varB.dat')
+      varADD<-scan('resultsETA_3_varB.dat')
+      varDOM<-scan('resultsETA_4_varB.dat')
+      }
+      if (dom & add & gen & env) {dominance_variance[j,k]= mean(results$ETA[[4]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[4]]$b)
+      dom_SD_effect[,k]<-as.matrix(results$ETA[[4]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[5]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[5]]$b)
+      GxE_SD_effect[,k]<-as.matrix(results$ETA[[5]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[6]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[6]]$b)
+      AxE_SD_effect[,k]<-as.matrix(results$ETA[[6]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[7]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[7]]$b)
+      DxE_SD_effect[,k]<-as.matrix(results$ETA[[7]]$SD.b)
+      varENV<-scan('resultsETA_1_varB.dat')
+      varGEN<-scan('resultsETA_2_varB.dat')
+      varADD<-scan('resultsETA_3_varB.dat')
+      varDOM<-scan('resultsETA_4_varB.dat')
+      varGxE<-scan('resultsETA_5_varB.dat')
+      }
+      if (dom & add & gen & env & fix) {dominance_variance[j,k]= mean(results$ETA[[5]]$varB)
+      dom_effect[,k]<-as.matrix(results$ETA[[5]]$b)
       dom_SD_effect[,k]<-as.matrix(results$ETA[[5]]$SD.b)
+      GeneticxEnvironment_variance[j,k]= mean(results$ETA[[6]]$varB)
+      GxE_effect[,k]<-as.matrix(results$ETA[[6]]$b)
       GxE_SD_effect[,k]<-as.matrix(results$ETA[[6]]$SD.b)
+      AdditivexEnvironment_variance[j,k]= mean(results$ETA[[7]]$varB)
+      AxE_effect[,k]<-as.matrix(results$ETA[[7]]$b)
       AxE_SD_effect[,k]<-as.matrix(results$ETA[[7]]$SD.b)
+      DominancexEnvironment_variance[j,k]= mean(results$ETA[[8]]$varB)
+      DxE_effect[,k]<-as.matrix(results$ETA[[8]]$b)
       DxE_SD_effect[,k]<-as.matrix(results$ETA[[8]]$SD.b)
-      prediction<-matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k] + 
-                               addtest%*%add_effect[,k] + domtest%*%dom_effect[,k] + 
-                               GxEtest%*%GxE_effect[,k] + AxEtest%*%AxE_effect[,k] +
-                               DxEtest%*%DxE_effect[,k] + fixtest%*%fix_effect[,k])
-      genetic_interaction<-matrix(gentest%*%gen_effect[,k] + addtest%*%add_effect[,k] +
-                                        domtest%*%dom_effect[,k] + GxEtest%*%GxE_effect[,k] +
-                                        AxEtest%*%AxE_effect[,k] + DxEtest%*%DxE_effect[,k])
-      genetic_value<-matrix(addtest%*%add_effect[,k])
+      varENV<-scan('resultsETA_2_varB.dat')
+      varGEN<-scan('resultsETA_3_varB.dat')
+      varADD<-scan('resultsETA_4_varB.dat')
+      varDOM<-scan('resultsETA_5_varB.dat')
+      varGxE<-scan('resultsETA_6_varB.dat')
+      }
+      
+      prediction<-pred(args, model="1")
+        
+      #matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k] + 
+      #                         addtest%*%add_effect[,k] + domtest%*%dom_effect[,k] + 
+      #                         GxEtest%*%GxE_effect[,k] + AxEtest%*%AxE_effect[,k] +
+      #                         DxEtest%*%DxE_effect[,k] + fixtest%*%fix_effect[,k])
+      genotypic_value<-pred(args, model="2")
+        
+        
+      #matrix(gentest%*%gen_effect[,k] + addtest%*%add_effect[,k] +
+      #                                  domtest%*%dom_effect[,k] + GxEtest%*%GxE_effect[,k] +
+      #                                  AxEtest%*%AxE_effect[,k] + DxEtest%*%DxE_effect[,k])
+      genetic_value<-pred(args, model="3")
+      #matrix(addtest%*%add_effect[,k])
       statistics<-data.frame(results$fit)
       DIC[j,k]<-statistics[,4]
       
@@ -311,27 +531,22 @@ for (i in 1:nvariable)
       abline(h=results$varE,col=4,lwd=2);
       abline(v=results$burnIn/results$thin,col=4)
       
-      varENV<-scan('resultsETA_2_varB.dat')
       plot(varENV,type='o',col=2,cex=.5,ylab=expression(var[e]), main = "Environment variance");
       abline(h=results$ETA[[2]]$varB,col=4,lwd=2);
       abline(v=results$burnIn/results$thin,col=4)
       
-      varGEN<-scan('resultsETA_3_varB.dat')
       plot(varGEN,type='o',col=2,cex=.5,ylab=expression(var[e]), main = "Genetic variance");
       abline(h=results$ETA[[3]]$varB,col=4,lwd=2);
       abline(v=results$burnIn/results$thin,col=4)
       
-      varADD<-scan('resultsETA_4_varB.dat')
       plot(varADD,type='o',col=2,cex=.5,ylab=expression(var[e]), main = "Additive variance");
       abline(h=results$ETA[[4]]$varB,col=4,lwd=2);
       abline(v=results$burnIn/results$thin,col=4)
       
-      varDOM<-scan('resultsETA_5_varB.dat')
       plot(varDOM,type='o',col=2,cex=.5,ylab=expression(var[e]), main = "Dominance variance");
       abline(h=results$ETA[[5]]$varB,col=4,lwd=2);
       abline(v=results$burnIn/results$thin,col=4)
       
-      varGxE<-scan('resultsETA_6_varB.dat')
       plot(varGxE,type='o',col=2,cex=.5,ylab=expression(var[e]), main = "GxE variance");
       abline(h=results$ETA[[6]]$varB,col=4,lwd=2);
       abline(v=results$burnIn/results$thin,col=4)
