@@ -1,7 +1,50 @@
 
-
-model <- function(model){
-  if (model=="FIXED"){model=model}
+pred <- function(args, model){
+  add = args$add
+  dom = args$dom
+  gen = args$gen
+  env = args$env
+  if (model =1) {if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k])}
+    if (dom & env) {prediction= matrix(envtest%*%env_effect[,k] + domtest%*%dom_effect[,k])}
+    if (gen & env) {prediction= matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k])}
+    if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k])}
+    if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+    if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
+    if (add & gen & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
+                                               gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
+    if (add & don & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
+                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+    if (gen & don & env) {prediction= matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
+                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+    if (add & gen & don & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
+                                                     gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
+                                                     domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+  }
+  else if (model =2) {if (add) {prediction= matrix(addtest%*%add_effect[,k])}
+    if (dom) {prediction= matrix(domtest%*%dom_effect[,k])}
+    if (gen) {prediction= matrix(gentest%*%gen_effect[,k])}
+    if (add & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k])}
+    if (add & env) {prediction= matrix(domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+    if (add & env) {prediction= matrix(gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
+    if (add & gen & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
+                                               gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
+    if (add & don & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
+                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+    if (gen & don & env) {prediction= matrix(gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
+                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+    if (add & gen & don & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
+                                                     gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
+                                                     domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+  }
+  else if (model =3) {if (add) {prediction= matrix(addtest%*%add_effect[,k])}
+    if (dom) {prediction= matrix(domtest%*%dom_effect[,k])}
+    if (gen) {prediction= matrix(gentest%*%gen_effect[,k])}
+    if (add & gen) {prediction= matrix(addtest%*%add_effect[,k] + gentest%*%gen_effect[,k])}
+    if (add & don) {prediction= matrix(addtest%*%add_effect[,k] + domtest%*%dom_effect[,k])}
+    if (gen & don) {prediction= matrix(gentest%*%gen_effect[,k] + domtest%*%dom_effect[,k])}
+    if (add & gen & don) {prediction= matrix(addtest%*%add_effect[,k] + gentest%*%gen_effect[,k] + 
+                                                     domtest%*%dom_effect[,k])}
+  }
 }
 
 effect.pred <- function(X, a){
@@ -17,13 +60,26 @@ ind.pred <- function (X, G, A, D, GE, AE, DE){
   genetic_GxE_value1<-genetic_GxE_value[order(genetic_GxE_value$Env),]
 }
 
-family.pred <- function (X, Z, W, k, r, add, dom){
-  if (add = TRUE & dom = FALSE){genotypic_value<-data.frame(X[,1:3],effect.pred(X=A, a=k))
-  colnames(genotypic_value)<-c("Env", "Gen", "Blo", "GV")}
-  else if (add = TRUE & dom = TRUE){genotypic_value<-data.frame(X[,1:3],effect.pred(X=A, a=k), effect.pred(X=W, a=r))
-  colnames(genotypic_value)<-c("Env", "Gen", "Blo", "GV")}
-  else if (add = FALSE & dom = TRUE){genotypic_value<-data.frame(X[,1:3],effect.pred(X=W, a=r))
-  colnames(genotypic_value)<-c("Env", "Gen", "Blo", "GV")}
+family.pred <- function (args){
+  add = args$add
+  dom = args$dom
+  
+  genotypic_value           <- as.data.frame( X[,1:3] )
+  colnames(genotypic_value) <- c( "Env", "Gen", "Blo" )
+  
+  if ( add ){
+    genotypic_value$add <- effect.pred(X = args$Z, a = args$k)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Additive_Value")
+  }
+  
+  if ( dom ){
+    genotypic_value$dom <- effect.pred( X = args$W, a = args$r)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Dominance_Value")
+  }
+  
+  if( add & dom ){
+    genotypic_value$GV <- genotypic_value$Additive_Value + genotypic_value$Dominance_Value
+  }
   genotypic_value1<-genotypic_value[order(genotypic_value$Env),]
   lev  = unique(X[,2])
   NFam = length(lev)
@@ -38,7 +94,9 @@ family.pred <- function (X, Z, W, k, r, add, dom){
     fgv<-matrix(0,nrow=nrow(X), ncol=1)
     for (y in 1:nrow(X))
     {
-      if (genotypic_value1[y,2]==x){fgv[y,1]=genotypic_value1[y,4]}
+      if (genotypic_value1[y,2]==x & add){fgv[y,1]=genotypic_value1[y,4]}
+      if (genotypic_value1[y,2]==x & dom){fgv[y,1]=genotypic_value1[y,4]}
+      if (genotypic_value1[y,2]==x & add & dom){fgv[y,1]=genotypic_value1[y,6]}
     }
     family_genotypic_value[x,1]<-sum(fgv)/ncol(Nenv)*ncol(Nbloc)
   }
@@ -55,6 +113,18 @@ design.interaction <- function(M,X){
   }
   internew=inter[,(ncol(M)+1):ncol(inter)]
   return(internew)
+}
+
+
+cal.inter <- function(Z, W){
+  if (W==1) {X[,(1+ncol(Z)*which(W==1)):(ncol(Z)+ncol(Z)*which(W==1))]=Z}
+}
+
+design.interaction <- function(Z,W){
+  X<-Matrix(0,nrow=nrow(Z), ncol=(ncol(Z)*ncol(W)+ncol(Z)), sparse= TRUE)
+  mapply(cal.inter, split(X, row(X)), split(Z, row(Z)), split(W, row(W)))
+  inter<=X[,(ncol(Z)+1):ncol(X)]
+  return(inter)
 }
 
 freq.loci <- function(X){ (sum(X==2) + sum(X==1)*.5)/length(X) }
