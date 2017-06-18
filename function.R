@@ -1,4 +1,17 @@
 
+matrix.creation <-function(X, args){
+  if (args$Fam=FALSE){
+    newM=X[as.character(args$train),]
+    return(newM)
+  }
+  if (args$Fam=TRUE){
+    newM=data.frame(agrs$pheno[,1:3], X)
+    newM1=sort(newM[,3], decreasing=F)
+    newM2=newM1[,4:ncol(newM1)]
+    return(newM2)
+  }
+}
+
 pred <- function(args, model){
   add = args$add
   dom = args$dom
@@ -20,10 +33,7 @@ pred <- function(args, model){
                                                      gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
                                                      domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
   }
-  else if (model =2) {if (add) {prediction= matrix(addtest%*%add_effect[,k])}
-    if (dom) {prediction= matrix(domtest%*%dom_effect[,k])}
-    if (gen) {prediction= matrix(gentest%*%gen_effect[,k])}
-    if (add & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k])}
+  else if (model =2) {if (add & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k])}
     if (add & env) {prediction= matrix(domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
     if (add & env) {prediction= matrix(gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
     if (add & gen & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
@@ -52,12 +62,91 @@ effect.pred <- function(X, a){
   return(effect)
 }
 
-ind.pred <- function (X, G, A, D, GE, AE, DE){
-  genetic_GxE_value<-data.frame(pheno[,1:3],matrix((gen1%*%rowMeans(genetic_effects)+add%*%rowMeans(additive_effects)+
-                                                      dom%*%rowMeans(dominance_effects)+GxE%*%rowMeans(GeneticxEnvironment_effects)+
-                                                      AxE%*%rowMeans(AdditivexEnvironment_effects)+DxE%*%rowMeans(DominancexEnvironment_effects))))
-  colnames(genetic_GxE_value)<-c("Env", "Gen", "Blo", "GV")
+ind.pred <- function (args){
+  add = args$add
+  dom = args$dom
+  gen = args$gen
+  env = args$env
+  genotypic_value           <- as.data.frame( X[,1:3] )
+  colnames(genotypic_value) <- c( "Env", "Gen", "Blo" )
+  if ( gen ){
+    genotypic_value$gen <- effect.pred(X = args$gen, a = args$genetic_effects)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Genetic_Value")
+  }
+  if ( add ){
+    genotypic_value$add <- effect.pred(X = args$add, a = args$additive_effects)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Additive_Value")
+  }
+  if ( dom ){
+    genotypic_value$dom <- effect.pred( X = args$dom, a = args$dominance_effects)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Dominance_Value")
+  }
+  if( gen & add ){
+    genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Additive_Value
+  }
+  if( gen & dom ){
+    genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Dominance_Value
+  }
+  if( add & dom ){
+    genotypic_value$GV <- genotypic_value$Additive_Value + genotypic_value$Dominance_Value
+  }
+  if( gen & add & dom ){
+    genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Additive_Value 
+    + genotypic_value$Dominance_Value
+  }
+  if ( gen & env ){
+    genotypic_value$gen <- effect.pred(X = args$gen, a = args$genetic_effects) + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Genetic_Value")
+  }
+  if ( add & env ){
+    genotypic_value$add <- effect.pred(X = args$add, a = args$additive_effects) + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Additive_Value")
+  }
+  if ( dom & env ){
+    genotypic_value$dom <- effect.pred( X = args$dom, a = args$dominance_effects) + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
+    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Dominance_Value")
+  }
+  if( gen & add & env ){
+    genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Additive_Value +
+      + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
+      + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
+  }
+  if( gen & dom & env ){
+    genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Dominance_Value
+    + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
+    + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
+  }
+  if( add & dom & env ){
+    genotypic_value$GV <- genotypic_value$Additive_Value + genotypic_value$Dominance_Value
+    + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
+    + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
+  }
+  if( gen & add & dom ){
+    genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Additive_Value 
+    + genotypic_value$Dominance_Value + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
+    + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
+    + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
+  }
   genetic_GxE_value1<-genetic_GxE_value[order(genetic_GxE_value$Env),]
+  for(l in 1:ncol(args$env))
+  {
+    a<-1+((l-1)*ncol(args$fix)*ncol(args$gen))
+    b<-l*ncol(args$fix)*ncol(args$gen)
+    gv<-data.frame(genetic_GxE_value1[a:b,])
+    pheno2<-data.frame(args$pheno[a:b,])
+    cat("-----Individual selection - environment " ,l, ": ", "\n")
+    rank=gv[order(gv[,4], decreasing = TRUE),]
+    print(gv[order(gv[,4], decreasing = TRUE),])
+    cat("-----Highest Posterior Density Intervals:", "\n") 
+    print(emp.hpd(gv[,4]))
+    write.table(gv[order(gv[,4], decreasing = TRUE),], paste("genetic_value", i, l), quote = FALSE, row.names = FALSE)
+    write.table(emp.hpd(gv[,4]), paste("CI_genetic_value", i), quote = FALSE, row.names = FALSE)
+    cat("\n")
+    plot(gv[,4]~pheno2[,i+3],xlab='Observed',ylab='Predicted',col=2, main=paste('Environment ', l),
+         xlim=c(min(pheno1[i,]), max(pheno1[i,])),ylim=c(min(genetic_interaction),max(genetic_interaction))) 
+    abline(a=0,b=1,col=4,lwd=2)
+    return(rank)
+  }
 }
 
 family.pred <- function (args){
@@ -68,12 +157,12 @@ family.pred <- function (args){
   colnames(genotypic_value) <- c( "Env", "Gen", "Blo" )
   
   if ( add ){
-    genotypic_value$add <- effect.pred(X = args$Z, a = args$k)
+    genotypic_value$add <- effect.pred(X = args$add, a = args$additive_effects)
     colnames(genotypic_value)[ncol(genotypic_value)] <- c("Additive_Value")
   }
   
   if ( dom ){
-    genotypic_value$dom <- effect.pred( X = args$W, a = args$r)
+    genotypic_value$dom <- effect.pred( X = args$dom, a = args$dominance_effects)
     colnames(genotypic_value)[ncol(genotypic_value)] <- c("Dominance_Value")
   }
   
@@ -114,7 +203,6 @@ design.interaction <- function(M,X){
   internew=inter[,(ncol(M)+1):ncol(inter)]
   return(internew)
 }
-
 
 cal.inter <- function(Z, W){
   if (W==1) {X[,(1+ncol(Z)*which(W==1)):(ncol(Z)+ncol(Z)*which(W==1))]=Z}
