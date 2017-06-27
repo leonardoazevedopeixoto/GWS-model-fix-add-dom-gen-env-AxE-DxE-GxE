@@ -20,7 +20,7 @@
 ## Users can choose any model that there is in BGLR package such as FIXED, BRR, BA, BB, BC, and BL
 
 ####################################################################
-setwd("C:\\Users\\Leonardo\\Google Drive\\Simulação GWS\\Simulacao RILs\\Resultados")
+setwd("C:\\Users\\Leonardo\\Documents\\GWS-model-fix-add-dom-gen-env-AxE-DxE-GxE")
 
 ## Reading genotype file
 geno<-read.table("RILgeno.txt", h=F)
@@ -28,8 +28,10 @@ geno<-read.table("RILgeno.txt", h=F)
 ## Reading phenotype file
 pheno<-as.matrix(read.table("RILvalfen.txt", h=F))
 
+## Reading the model file (file which specifies what bayesian model should be used for each factor)
 model<-read.table("model.txt", h=F)
 
+library(foreach)
 library(argparse)
 library(BGLR)
 library(rrBLUP)
@@ -38,11 +40,13 @@ library(TeachingDemos)
 library(HapEstXXR)
 library(Matrix)
 
+
+## Items that should be informed by the User
 nfolds=5
 niteraction=2
-nIter=250000
-burmIm=20000
-thin=10
+nIter=1000
+burmIm=100
+thin=1
 
 Fix = TRUE
 Env = TRUE
@@ -50,6 +54,8 @@ Gen = TRUE
 Add = TRUE
 Dom = TRUE
 Fam = FALSE
+
+## Creating a file called "args" with all files that need to run GWS model
 X  = pheno
 
 args <- list('X' = X , 'fix' = NULL , 'env' = NULL , 'gen' = NULL , 'add' = NULL , 'dom' = NULL ,
@@ -63,7 +69,7 @@ args <- list('X' = X , 'fix' = NULL , 'env' = NULL , 'gen' = NULL , 'add' = NULL
              'AxE_effect' = NULL, 'DxE_effect' = NULL, 'train' = NULL, 'fix' = Fix, 'env' = Env, 'gen' = Gen,
              'add' = Add, 'dom' = Dom, 'fam' = Fam )
 
-
+## Creating a pdf file to save all graphics
 pdf.options(family="Helvetica", height=5, width= 10)
 pdf("Full model.pdf", pointsize=6)
 
@@ -97,36 +103,13 @@ rownames(add) <- 1:Nids}
 if (Dom) {dom <- scale.dom(X = geno)}
 
 ## Creating the incidence matrix of GeneticxEnvironment effect
-if (Gen & Env) {GxE <- design.interaction(Z=gen, W=env)}
-
-#GxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(gen)*ncol(env), sparse= TRUE)
-
-#for(i in 1:nrow(pheno))
-#{
-#  GxE[i,]<-Matrix(kronecker(env[i,], gen[i,]), sparse= TRUE)
-#}
-#rownames(GxE)<-seq(1,nrow(pheno1),1)
+if (Gen & Env) {GxE <- get.matrix(m1 = gen, m2 = env, nsnp = nrwo(gen) , nRow = nrow(gen), nLev = ncol(env))}
 
 ## Creating the incidence matrix of AdditivexEnvironment effect
-if (Add & Env) {AxE <- design.interaction(Z=add, W=env)}
-
-#AxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(add)*length(nenv))
-#for(i in 1:nrow(pheno))
-#{
-#  AxE[i,]<-Matrix(kronecker(env1[i,], add[i,]), sparse= TRUE)
-#}
-#rownames(AxE)<-seq(1,nrow(pheno1),1)
+if (Add & Env) {AxE <- get.matrix(m1 = gen, m2 = env, nsnp = nrwo(gen) , nRow = nrow(gen), nLev = ncol(env))}
 
 ## Creating the incidence matrix of DominancexEnvironment effect
-if (Dom & Env) {DxE <- design.interaction(M=dom, X=env)}
-
-#DxE<-Matrix(0,nrow=nrow(pheno), ncol=ncol(dom)*length(nenv))
-
-#for(i in 1:nrow(pheno))
-#{
-#  DxE[i,]<-Matrix(kronecker(env1[i,], dom[i,]))
-#}
-#rownames(DxE)<-seq(1,nrow(pheno1),1)
+if (Dom & Env) {DxE <- get.matrix(m1 = gen, m2 = env, nsnp = nrwo(gen) , nRow = nrow(gen), nLev = ncol(env))}
 
 ## Defining how many subsets (folds) will be used to run the analysis
 subset<-cut(seq(1,nrow(pheno1)),breaks=nfolds,labels=FALSE)
