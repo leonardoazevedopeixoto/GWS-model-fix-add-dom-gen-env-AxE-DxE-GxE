@@ -193,30 +193,30 @@ family.pred <- function (args){
   return(family_genotypic_value)
 }
 
-design.interaction <- function(M,X){
-  inter<-Matrix(0, nrow=Nids, ncol=(ncol(M)*ncol(X)+ncol(M)), sparse= TRUE)
-  for (i in 1:ncol(X)){
-    for (j in 1:Nids){
-      if(X[j,i]==1){inter[j,(i*ncol(M)+1):((i+1)*ncol(M))]=M[j,1:ncol(M)]}
-    }
-  }
-  internew=inter[,(ncol(M)+1):ncol(inter)]
-  return(internew)
+## Function to get enviroment level
+get.index <- function(X){ which(X==1) }
+
+## Function to compute desired matrix (usually GxE, or AxE, or DxE incidence matrix)
+get.matrix <- function( m1, m2, nsnp, nRow, nLev){
+  ## Output matrix
+  m <- Matrix(data = 0, nrow = nRow, ncol = nsnp*nLev , sparse = TRUE)
+  
+  ## Arguments
+  Index <- apply(m2 , 1 , get.index)
+  top   <- Index*nsnp
+  bot   <- ifelse(top==nsnp, 1, top-nsnp+1)
+  
+  ## Creates the matrix in parallel
+  system.time(
+    foreach(ii = 1:nRow) %dopar% { m[ii,bot[ii]:top[ii]] <- m1[ii,] }
+  )
+  return(m)
 }
 
-cal.inter <- function(Z, W){
-  if (W==1) {X[,(1+ncol(Z)*which(W==1)):(ncol(Z)+ncol(Z)*which(W==1))]=Z}
-}
-
-design.interaction <- function(Z,W){
-  X<-Matrix(0,nrow=nrow(Z), ncol=(ncol(Z)*ncol(W)+ncol(Z)), sparse= TRUE)
-  mapply(cal.inter, split(X, row(X)), split(Z, row(Z)), split(W, row(W)))
-  inter<=X[,(ncol(Z)+1):ncol(X)]
-  return(inter)
-}
-
+##Function to estimate the frequency for each loci
 freq.loci <- function(X){ (sum(X==2) + sum(X==1)*.5)/length(X) }
 
+##Function to create the dominance incidence matrix
 scale.marker <- function(X,freq){
   if(X==0){
     X = -2*(1-freq)^2
@@ -228,15 +228,18 @@ scale.marker <- function(X,freq){
   return(X)
 }
 
+##Function to create the dominance incidence matrix
 get.all.loci <- function(X){
   freq = freq.loci(X)
   apply(as.matrix(X,ncol=1),1,scale.marker,freq)
 }
 
+##Function to create the dominance incidence matrix
 scale.dom <- function(X){
   apply(X,2,get.all.loci)
 }
 
+##Function to create the incidence matrix
 design.matrix <- function(X, Nids){
   lev  = unique(X)
   nlev = length(lev)
@@ -249,6 +252,7 @@ design.matrix <- function(X, Nids){
   return(incidence)
 }
 
+## Function to recode the genotype file aiming to calculate maf, call rate and EWH using the function maf
 recode.genotype <- function(M){
   ##
   geno1 = M #matrix(0,Nrow,Ncol)
