@@ -1,64 +1,174 @@
 
-matrix.creation <-function(X, args){
-  if (args$Fam=FALSE){
-    newM=X[as.character(args$train),]
-    return(newM)
-  }
-  if (args$Fam=TRUE){
-    newM=data.frame(agrs$pheno[,1:3], X)
-    newM1=sort(newM[,3], decreasing=F)
-    newM2=newM1[,4:ncol(newM1)]
-    return(newM2)
-  }
+ETA.pred <-function (args, model){
+  if(Fix & Nfix>1) {ETA=list(list(X=args$fixtrain, model = model[1,]))}
+  if(Env & Nenv>1) {ETA=list(list(X=args$envtrain, model = model[2,]))}
+  if(Gen) {ETA=list(list(X=args$gentrain, model = model[3,]))} 
+  if(Add) {ETA=list(list(X=args$addtrain, model = model[4,]))}
+  if(Dom) {ETA=list(list(X=args$domtrain, model = model[5,]))}
+  if(Fix & Nfix>1 & Env & Nenv>1) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                            list(X=args$envtrain, model = model[2,]))}
+  if(Fix & Nfix>1 & Gen) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                   list(X=args$gentrain, model = model[3,]))}
+  if(Fix & Nfix>1 & Add) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                   list(X=args$addtrain, model = model[4,]))}
+  if(Fix & Nfix>1 & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                   list(X=args$domtrain, model = model[5,]))}
+  if(Env & Nenv>1 & Gen) {ETA=list(list(X=args$envtrain, model = model[2,]),
+                                   list(X=args$gentrain, model = model[3,]),
+                                   list(X=args$GxEtrain, model = model[6,]))}
+  if(Env & Nenv>1 & Add) {ETA=list(list(X=args$envtrain, model = model[2,]),
+                                   list(X=args$addtrain, model = model[4,]),
+                                   list(X=args$AxEtrain, model = model[7,]))}
+  if(Env & Nenv>1 & Dom) {ETA=list(list(X=args$envtrain, model = model[2,]),
+                                   list(X=args$domtrain, model = model[5,]),
+                                   list(X=args$DxEtrain, model = model[8,]))}
+  if(Gen & Add) {ETA=list(list(X=args$gentrain, model = model[3,]),
+                          list(X=args$addtrain, model = model[4,]))}
+  if(Gen & Dom) {ETA=list(list(X=args$gentrain, model = model[3,]),
+                          list(X=args$domtrain, model = model[5,]))}
+  if(Dom & Add) {ETA=list(list(X=args$domtrain, model = model[5,]),
+                          list(X=args$addtrain, model = model[4,]))} 
+  if(Fix & Nfix>1 & Env & Nenv>1 & Gen) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                                  list(X=args$envtrain, model = model[2,]),
+                                                  list(X=args$gentrain, model = model[3,]),
+                                                  list(X=args$GxEtrain, model = model[6,]))}
+  if(Fix & Nfix>1 & Env & Nenv>1 & Add) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                                  list(X=args$envtrain, model = model[2,]),
+                                                  list(X=args$addtrain, model = model[4,]),
+                                                  list(X=args$AxEtrain, model = model[7,]))}
+  if(Fix & Nfix>1 & Env & Nenv>1 & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                                  list(X=args$envtrain, model = model[2,]),
+                                                  list(X=args$domtrain, model = model[5,]),
+                                                  list(X=args$DxEtrain, model = model[8,]))}
+  if(Fix & Nfix>1 & Gen & Add) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                         list(X=args$gentrain, model = model[3,]),
+                                         list(X=args$addtrain, model = model[4,]))}
+  if(Fix & Nfix>1 & Gen & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                         list(X=args$gentrain, model = model[3,]),
+                                         list(X=args$domtrain, model = model[5,]))}
+  if(Fix & Nfix>1 & Add & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                         list(X=args$addtrain, model = model[4,]),
+                                         list(X=args$domtrain, model = model[5,]))}
+  if(Env & Nenv>1 & Gen & Add) {ETA=list(list(X=args$envtrain, model = model[2,]),
+                                         list(X=args$gentrain, model = model[3,]),
+                                         list(X=args$GxEtrain, model = model[6,]),
+                                         list(X=args$addtrain, model = model[4,]),
+                                         list(X=args$AxEtrain, model = model[7,]))}
+  if(Env & Nenv>1 & Gen & Dom) {ETA=list(list(X=args$envtrain, model = model[2,]),
+                                         list(X=args$gentrain, model = model[3,]),
+                                         list(X=args$GxEtrain, model = model[6,]),
+                                         list(X=args$domtrain, model = model[5,]),
+                                         list(X=args$DxEtrain, model = model[8,]))}
+  if(Env & Nenv>1 & Add & Dom) {ETA=list(list(X=args$envtrain, model = model[2,]),
+                                         list(X=args$addtrain, model = model[4,]),
+                                         list(X=args$AxEtrain, model = model[7,]),
+                                         list(X=args$domtrain, model = model[5,]),
+                                         list(X=args$DxEtrain, model = model[8,]))}
+  if(Gen & Add & Dom) {ETA=list(list(X=args$gentrain, model = model[3,]),
+                                list(X=args$addtrain, model = model[4,]),
+                                list(X=args$domtrain, model = model[5,]))}
+  if(Fix & Nfix>1 & Env & Nenv>1 & Gen & Add) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                                        list(X=args$envtrain, model = model[2,]),
+                                                        list(X=args$gentrain, model = model[3,]),
+                                                        list(X=args$GxEtrain, model = model[6,]),
+                                                        list(X=args$addtrain, model = model[4,]),
+                                                        list(X=args$AxEtrain, model = model[7,]))}
+  if(Fix & Nfix>1 & Env & Nenv>1 & Gen & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                                        list(X=args$envtrain, model = model[2,]),
+                                                        list(X=args$gentrain, model = model[3,]),
+                                                        list(X=args$GxEtrain, model = model[6,]),
+                                                        list(X=args$domtrain, model = model[5,]),
+                                                        list(X=args$DxEtrain, model = model[8,]))}
+  if(Fix & Nfix>1 & Env & Nenv>1 & Add & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                                        list(X=args$envtrain, model = model[2,]),
+                                                        list(X=args$addtrain, model = model[4,]),
+                                                        list(X=args$AxEtrain, model = model[7,]),
+                                                        list(X=args$domtrain, model = model[5,]),
+                                                        list(X=args$DxEtrain, model = model[8,]))}
+  if(Fix & Nfix>1 & Gen & Add & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                               list(X=args$gentrain, model = model[3,]),
+                                               list(X=args$addtrain, model = model[4,]),
+                                               list(X=args$domtrain, model = model[5,]))}
+  if(Env & Nenv>1 & Gen & Add & Dom) {ETA=list(list(X=args$envtrain, model = model[2,]),
+                                               list(X=args$gentrain, model = model[3,]),
+                                               list(X=args$GxEtrain, model = model[6,]),
+                                               list(X=args$addtrain, model = model[4,]),
+                                               list(X=args$AxEtrain, model = model[7,]),
+                                               list(X=args$domtrain, model = model[5,]),
+                                               list(X=args$DxEtrain, model = model[8,]))}
+  if(Fix & Nfix>1 & Env & Nenv>1 & Gen & Add & Dom) {ETA=list(list(X=args$fixtrain, model = model[1,]),
+                                                              list(X=args$envtrain, model = model[2,]),
+                                                              list(X=args$gentrain, model = model[3,]),
+                                                              list(X=args$GxEtrain, model = model[6,]),
+                                                              list(X=args$addtrain, model = model[4,]),
+                                                              list(X=args$AxEtrain, model = model[7,]),
+                                                              list(X=args$domtrain, model = model[5,]),
+                                                              list(X=args$DxEtrain, model = model[8,]))}
+  return(ETA)
 }
 
-pred <- function(args, model){
+matrix.creation <-function(X, args, train){
+  X=as.matrix(X)
+  rownames(X)<-seq(1,nrow(X),1)
+  if (args$fam==FALSE){
+    newM=Matrix(X[train,])
+  }
+  else if (args$fam==TRUE){
+    new=data.frame(agrs$pheno[,1:3], X)
+    new1=sort(new[,3], decreasing=F)
+    newM=Matrix(new1[,4:ncol(new1)])
+  }
+  return(newM)
+}
+
+pred <- function(args, mod, k){
   add = args$add
   dom = args$dom
   gen = args$gen
   env = args$env
-  if (model =1) {if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k])}
-    if (dom & env) {prediction= matrix(envtest%*%env_effect[,k] + domtest%*%dom_effect[,k])}
-    if (gen & env) {prediction= matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k])}
-    if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k])}
-    if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
-    if (add & env) {prediction= matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
-    if (add & gen & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
-                                               gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
-    if (add & don & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
-                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
-    if (gen & don & env) {prediction= matrix(envtest%*%env_effect[,k] + gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
-                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
-    if (add & gen & don & env) {prediction= matrix(envtest%*%env_effect[,k] + addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
-                                                     gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
-                                                     domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+  if (mod==1) {if (add & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$addtest%*%args$add_effect[,k])}
+    if (dom & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$domtest%*%args$dom_effect[,k])}
+    if (gen & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$gentest%*%args$gen_effect[,k])}
+    if (add & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k])}
+    if (add & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
+    if (add & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k])}
+    if (add & gen & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k] +
+                                                        args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k])}
+    if (add & dom & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k] +
+                                                        args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
+    if (gen & dom & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k] +
+                                                        args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
+    if (add & gen & dom & env & Nenv>1) {prediction= matrix(args$envtest%*%args$env_effect[,k] + args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k] +
+                                                              args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k] +
+                                                              args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
   }
-  else if (model =2) {if (add & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k])}
-    if (add & env) {prediction= matrix(domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
-    if (add & env) {prediction= matrix(gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
-    if (add & gen & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
-                                               gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k])}
-    if (add & don & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
-                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
-    if (gen & don & env) {prediction= matrix(gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
-                                               domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
-    if (add & gen & don & env) {prediction= matrix(addtest%*%add_effect[,k] + AxEtest%*%AxE_effect[,k] +
-                                                     gentest%*%gen_effect[,k] + GxEtest%*%GxE_effect[,k] +
-                                                     domtest%*%dom_effect[,k] + DxEtest%*%DxE_effect[,k])}
+  if (mod==2) {if (add & env & Nenv>1) {prediction= matrix(args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k])}
+    if (add & env & Nenv>1) {prediction= matrix(args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
+    if (add & env & Nenv>1) {prediction= matrix(args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k])}
+    if (add & gen & env & Nenv>1) {prediction= matrix(args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k] +
+                                                        args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k])}
+    if (add & dom & env & Nenv>1) {prediction= matrix(args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k] +
+                                                        args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
+    if (gen & dom & env & Nenv>1) {prediction= matrix(args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k] +
+                                                        args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
+    if (add & gen & dom & env & Nenv>1) {prediction= matrix(args$addtest%*%args$add_effect[,k] + args$AxEtest%*%args$AxE_effect[,k] +
+                                                              args$gentest%*%args$gen_effect[,k] + args$GxEtest%*%args$GxE_effect[,k] +
+                                                              args$domtest%*%args$dom_effect[,k] + args$DxEtest%*%args$DxE_effect[,k])}
   }
-  else if (model =3) {if (add) {prediction= matrix(addtest%*%add_effect[,k])}
-    if (dom) {prediction= matrix(domtest%*%dom_effect[,k])}
-    if (gen) {prediction= matrix(gentest%*%gen_effect[,k])}
-    if (add & gen) {prediction= matrix(addtest%*%add_effect[,k] + gentest%*%gen_effect[,k])}
-    if (add & don) {prediction= matrix(addtest%*%add_effect[,k] + domtest%*%dom_effect[,k])}
-    if (gen & don) {prediction= matrix(gentest%*%gen_effect[,k] + domtest%*%dom_effect[,k])}
-    if (add & gen & don) {prediction= matrix(addtest%*%add_effect[,k] + gentest%*%gen_effect[,k] + 
-                                                     domtest%*%dom_effect[,k])}
-  }
+  if (mod==3) {if (add) {prediction= matrix(args$addtest%*%args$add_effect[,k])}
+    if (dom) {prediction= matrix(args$domtest%*%args$dom_effect[,k])}
+    if (gen) {prediction= matrix(args$gentest%*%args$gen_effect[,k])}
+    if (add & gen) {prediction= matrix(args$addtest%*%args$add_effect[,k] + args$gentest%*%args$gen_effect[,k])}
+    if (add & dom) {prediction= matrix(args$addtest%*%args$add_effect[,k] + args$domtest%*%args$dom_effect[,k])}
+    if (gen & dom) {prediction= matrix(args$gentest%*%args$gen_effect[,k] + args$domtest%*%args$dom_effect[,k])}
+    if (add & gen & dom) {prediction= matrix(args$addtest%*%args$add_effect[,k] + args$gentest%*%args$gen_effect[,k] + 
+                                               args$domtest%*%args$dom_effect[,k])}
+  } else {prediction=NULL}
+  return(prediction)
 }
 
-effect.pred <- function(X, a){
-  effect<-matrix(X%*%rowMeans(a))
+effect.pred <- function(Z, a){
+  effect<-matrix(Z%*%rowMeans(a, na.rm = TRUE))
   return(effect)
 }
 
@@ -70,15 +180,15 @@ ind.pred <- function (args){
   genotypic_value           <- as.data.frame( X[,1:3] )
   colnames(genotypic_value) <- c( "Env", "Gen", "Blo" )
   if ( gen ){
-    genotypic_value$gen <- effect.pred(X = args$gen, a = args$genetic_effects)
+    genotypic_value$gen <- effect.pred(Z = args$Gen, a = args$genetic_effects)
     colnames(genotypic_value)[ncol(genotypic_value)] <- c("Genetic_Value")
   }
   if ( add ){
-    genotypic_value$add <- effect.pred(X = args$add, a = args$additive_effects)
+    genotypic_value$add <- effect.pred(Z = args$Add, a = args$additive_effects)
     colnames(genotypic_value)[ncol(genotypic_value)] <- c("Additive_Value")
   }
   if ( dom ){
-    genotypic_value$dom <- effect.pred( X = args$dom, a = args$dominance_effects)
+    genotypic_value$dom <- effect.pred(Z = args$Dom, a = args$dominance_effects)
     colnames(genotypic_value)[ncol(genotypic_value)] <- c("Dominance_Value")
   }
   if( gen & add ){
@@ -94,59 +204,38 @@ ind.pred <- function (args){
     genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Additive_Value 
     + genotypic_value$Dominance_Value
   }
-  if ( gen & env ){
-    genotypic_value$gen <- effect.pred(X = args$gen, a = args$genetic_effects) + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
-    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Genetic_Value")
+  if ( gen & env & Nenv>1 ){
+    genotypic_value$GV <- effect.pred(Z = args$Gen, a = args$genetic_effects) + effect.pred(Z = args$GxE, a = args$GeneticxEnvironment_effects)
   }
-  if ( add & env ){
-    genotypic_value$add <- effect.pred(X = args$add, a = args$additive_effects) + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
-    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Additive_Value")
+  if ( add & env & Nenv>1 ){
+    genotypic_value$GV <- effect.pred(Z = args$Add, a = args$additive_effects) + effect.pred(Z = args$AxE, a = args$AdditivexEnvironment_effects)
   }
-  if ( dom & env ){
-    genotypic_value$dom <- effect.pred( X = args$dom, a = args$dominance_effects) + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
-    colnames(genotypic_value)[ncol(genotypic_value)] <- c("Dominance_Value")
+  if ( dom & env & Nenv>1 ){
+    genotypic_value$GV <- effect.pred(Z = args$Dom, a = args$dominance_effects) + effect.pred(Z = args$DxE, a = args$DominancexEnvironment_effects)
   }
-  if( gen & add & env ){
+  if( gen & add & env & Nenv>1 ){
     genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Additive_Value +
-      + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
-      + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
+      + effect.pred(Z = args$GxE, a = args$GeneticxEnvironment_effects)
+    + effect.pred(Z = args$AxE, a = args$AdditivexEnvironment_effects)
   }
-  if( gen & dom & env ){
+  if( gen & dom & env & Nenv>1 ){
     genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Dominance_Value
-    + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
-    + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
+    + effect.pred(Z = args$GxE, a = args$GeneticxEnvironment_effects)
+    + effect.pred(Z = args$DxE, a = args$DominancexEnvironment_effects)
   }
-  if( add & dom & env ){
+  if( add & dom & env & Nenv>1 ){
     genotypic_value$GV <- genotypic_value$Additive_Value + genotypic_value$Dominance_Value
-    + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
-    + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
+    + effect.pred(Z = args$AxE, a = args$AdditivexEnvironment_effects)
+    + effect.pred(Z = args$DxE, a = args$DominancexEnvironment_effects)
   }
   if( gen & add & dom ){
     genotypic_value$GV <- genotypic_value$Genetic_Value + genotypic_value$Additive_Value 
-    + genotypic_value$Dominance_Value + effect.pred(X = args$GxE, a = args$GeneticxEnvironment_effects)
-    + effect.pred(X = args$AxE, a = args$AdditivexEnvironment_effects)
-    + effect.pred(X = args$DxE, a = args$DominancexEnvironment_effects)
+    + genotypic_value$Dominance_Value + effect.pred(Z = args$GxE, a = args$GeneticxEnvironment_effects)
+    + effect.pred(Z = args$AxE, a = args$AdditivexEnvironment_effects)
+    + effect.pred(Z = args$DxE, a = args$DominancexEnvironment_effects)
   }
-  genetic_GxE_value1<-genetic_GxE_value[order(genetic_GxE_value$Env),]
-  for(l in 1:ncol(args$env))
-  {
-    a<-1+((l-1)*ncol(args$fix)*ncol(args$gen))
-    b<-l*ncol(args$fix)*ncol(args$gen)
-    gv<-data.frame(genetic_GxE_value1[a:b,])
-    pheno2<-data.frame(args$pheno[a:b,])
-    cat("-----Individual selection - environment " ,l, ": ", "\n")
-    rank=gv[order(gv[,4], decreasing = TRUE),]
-    print(gv[order(gv[,4], decreasing = TRUE),])
-    cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(gv[,4]))
-    write.table(gv[order(gv[,4], decreasing = TRUE),], paste("genetic_value", i, l), quote = FALSE, row.names = FALSE)
-    write.table(emp.hpd(gv[,4]), paste("CI_genetic_value", i), quote = FALSE, row.names = FALSE)
-    cat("\n")
-    plot(gv[,4]~pheno2[,i+3],xlab='Observed',ylab='Predicted',col=2, main=paste('Environment ', l),
-         xlim=c(min(pheno1[i,]), max(pheno1[i,])),ylim=c(min(genetic_interaction),max(genetic_interaction))) 
-    abline(a=0,b=1,col=4,lwd=2)
-    return(rank)
-  }
+  genotypic_value1<-genotypic_value[order(genotypic_value$Env),]
+  return(genotypic_value1)
 }
 
 family.pred <- function (args){
@@ -157,12 +246,12 @@ family.pred <- function (args){
   colnames(genotypic_value) <- c( "Env", "Gen", "Blo" )
   
   if ( add ){
-    genotypic_value$add <- effect.pred(X = args$add, a = args$additive_effects)
+    genotypic_value$add <- effect.pred(Z = args$Add, a = args$additive_effects)
     colnames(genotypic_value)[ncol(genotypic_value)] <- c("Additive_Value")
   }
   
   if ( dom ){
-    genotypic_value$dom <- effect.pred( X = args$dom, a = args$dominance_effects)
+    genotypic_value$dom <- effect.pred(Z = args$Dom, a = args$dominance_effects)
     colnames(genotypic_value)[ncol(genotypic_value)] <- c("Dominance_Value")
   }
   
@@ -173,12 +262,12 @@ family.pred <- function (args){
   lev  = unique(X[,2])
   NFam = length(lev)
   lev  = unique(X[,1])
-  Nemv = length(lev)
+  Nenv = length(lev)
   lev  = unique(X[,3])
   Nbloc = length(lev)
   
-  family_genotypic_value<-matrix(nrow=ncol(NFam), ncol=1)
-  for (x in 1:ncol(Nfam))
+  family_genotypic_value<-matrix(nrow=NFam, ncol=1)
+  for (x in 1:NFam)
   {
     fgv<-matrix(0,nrow=nrow(X), ncol=1)
     for (y in 1:nrow(X))
@@ -187,9 +276,12 @@ family.pred <- function (args){
       if (genotypic_value1[y,2]==x & dom){fgv[y,1]=genotypic_value1[y,4]}
       if (genotypic_value1[y,2]==x & add & dom){fgv[y,1]=genotypic_value1[y,6]}
     }
-    family_genotypic_value[x,1]<-sum(fgv)/ncol(Nenv)*ncol(Nbloc)
+    family_genotypic_value[x,1]<-sum(fgv)/Nenv*Nbloc
   }
   rownames(family_genotypic_value)<-seq(1, max(X[,2]), 1)
+  family_genotypic_value1<-data.frame(rownames(family_genotypic_value), family_genotypic_value)
+  family_genotypic_value2<-family_genotypic_value1[order(family_genotypic_value1[,2]),]
+  colnames(family_genotypic_value2)<-c("ID", "Genotypic value")
   return(family_genotypic_value)
 }
 
@@ -267,5 +359,3 @@ recode.genotype <- function(M){
   rownames(geno1) = rownames(M)
   return(geno1)
 }
-
-
