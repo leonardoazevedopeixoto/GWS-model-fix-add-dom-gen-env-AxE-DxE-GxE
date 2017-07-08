@@ -1,5 +1,24 @@
 
-ETA.pred <-function (args, model){
+con.diag <- function(args){
+  if (Env & Nenv>1) {diag=data.frame(cbind(varE, varENV))}
+  if (Gen) {diag=data.frame(cbind(varE, varGEN))}
+  if (Add) {diag=data.frame(cbind(varE, varADD))}
+  if (Dom) {diag=data.frame(cbind(varE, varDOM))}
+  if (Env & Nenv>1 & Gen) {diag=data.frame(cbind(varE, varENV, varGEN, varGxE))}
+  if (Env & Nenv>1 & Add) {diag=data.frame(cbind(varE, varENV, varADD, varAxE))}
+  if (Env & Nenv>1 & Dom) {diag=data.frame(cbind(varE, varENV, varDOM, varDxE))}
+  if (Add & Gen) {diag=data.frame(cbind(varE, varADD, varGEN))}
+  if (Dom & Gen) {diag=data.frame(cbind(varE, varDOM, varGEN))}
+  if (Dom & Add) {diag=data.frame(cbind(varE, varDOM, varADD))}
+  if (Env & Nenv>1 & Gen & Add) {diag=data.frame(cbind(varE, varENV, varGEN, varGxE, varADD, varAxE))}
+  if (Env & Nenv>1 & Gen & Dom) {diag=data.frame(cbind(varE, varENV, varGEN, varGxE, varDOM, varDxE))}
+  if (Env & Nenv>1 & Add & Dom) {diag=data.frame(cbind(varE, varENV, varADD, varAxE, varDOM, varDxE))}
+  if (Gen & Dom & Add) {diag=data.frame(cbind(varE, varGEN, varDOM, varADD))}
+  if (Env & Nenv>1 & Gen & Add & Dom) {diag=data.frame(cbind(varE, varENV, varGEN, varGxE, varADD, varAxE, varDOM, varDxE))}
+  return(diag)
+}
+
+ETA.pred <- function (args, model){
   if(Fix & Nfix>1) {ETA=list(list(X=args$fixtrain, model = model[1,]))}
   if(Env & Nenv>1) {ETA=list(list(X=args$envtrain, model = model[2,]))}
   if(Gen) {ETA=list(list(X=args$gentrain, model = model[3,]))} 
@@ -107,16 +126,17 @@ ETA.pred <-function (args, model){
   return(ETA)
 }
 
-matrix.creation <-function(X, args, train){
+matrix.creation <- function(X, args, train){
   X=as.matrix(X)
   rownames(X)<-seq(1,nrow(X),1)
   if (args$fam==FALSE){
     newM=Matrix(X[train,])
-  }
-  else if (args$fam==TRUE){
+    rownames(newM)<-train
+  } else if (args$fam==TRUE){
     new=data.frame(agrs$pheno[,1:3], X)
     new1=sort(new[,3], decreasing=F)
     newM=Matrix(new1[,4:ncol(new1)])
+    rownames(newM)<-train
   }
   return(newM)
 }
