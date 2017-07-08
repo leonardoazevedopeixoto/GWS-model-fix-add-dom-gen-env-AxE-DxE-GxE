@@ -20,11 +20,11 @@
 ## Users can choose any model that there is in BGLR package such as FIXED, BRR, BA, BB, BC, and BL
 
 ####################################################################
-setwd("C:\\Users\\Biometria_pc31\\Google Drive\\Simula??o GWS\\Simula??o RILs")
+setwd("C:\\Users\\Leonardo\\Documents\\GWS-model-fix-add-dom-gen-env-AxE-DxE-GxE")
 
 ## Reading genotype file
 geno<-read.table("RILgeno.txt", h=F)
-geno<-data.frame(geno[,1:500])
+geno<-data.frame(geno[1:500,1:500])
 ## Reading phenotype file
 pheno<-as.matrix(read.table("RILvalfen.txt", h=F))
 pheno<-data.frame(pheno[1:500,])
@@ -43,14 +43,14 @@ library(Matrix)
 
 ## Items that should be informed by the User
 nfolds=5
-niteraction=2
+niteraction=3
 nIter=1000
 burmIm=100
 thin=1
 
 Fix = TRUE
 Env = TRUE
-Gen = TRUE
+Gen = FALSE
 Add = TRUE
 Dom = TRUE
 Fam = FALSE
@@ -69,7 +69,8 @@ args <- list('X' = X , 'Fix' = NULL , 'Env' = NULL , 'Gen' = NULL , 'Add' = NULL
              'GeneticxEnvironment_effects' = NULL , 'fix_effect' = NULL, 'env_effect' = NULL,
              'gen_effect' = NULL, 'add_effect' = NULL, 'dom_effect' = NULL, 'GxE_effect' = NULL, 
              'AxE_effect' = NULL, 'DxE_effect' = NULL, 'train' = NULL, 'fix' = Fix, 'env' = Env, 'gen' = Gen,
-             'add' = Add, 'dom' = Dom, 'fam' = Fam )
+             'add' = Add, 'dom' = Dom, 'fam' = Fam, 'varENV' = NULL,  'varGEN' = NULL, 'varADD' = NULL,
+             'varDOM' = NULL, 'varGxE' = NULL, 'varAxE' = NULL, 'varDxE' = NULL)
 
 ## Creating a pdf file to save all graphics
 pdf.options(family="Helvetica", height=5, width= 10)
@@ -177,13 +178,15 @@ for (i in 1:nvariable)
     if (Gen & Nenv>1) {GxE2<-matrix.creation(X=args$GxE, args=args, train=train)}
     if (Add & Nenv>1) {AxE2<-matrix.creation(X=args$AxE, args=args, train=train)}
     if (Dom & Nenv>1) {DxE2<-matrix.creation(X=args$DxE, args=args, train=train)}
+    
     for (k in 1:nfolds)
     {
       timei<-proc.time() #initial time 
       
       testIndexes<-which(subset==i,arr.ind=TRUE) 
       
-      phenotrain<-pheno2[-testIndexes, ] ## Phenotype matrix to train 
+      phenotrain<-as.matrix(pheno2[-testIndexes, ]) ## Phenotype matrix to train 
+      colnames(phenotrain)<-"Phenotypic value"
       phenotest<-as.matrix(pheno2[testIndexes, ]) ## Phenotype effect matrix to validate 
       
       if (Fix & Nfix>1) {args$fixtrain<-as.matrix(fix2[-testIndexes, ]) ## fixed effect matrix to train 
@@ -541,7 +544,7 @@ for (i in 1:nvariable)
         abline(v=results$burnIn/results$thin,col=4)}
       
       ##Convergence diagnostics
-      parameters<-data.frame(cbind(varE, varENV, varGEN, varADD, varDOM, varGxE, varAxE, varDxE))
+      parameters<-con.diag(args=args)
       convergence<-boa.randl(parameters, 0.025, 0.005, 0.95, 0.001)
       cat("-----Raftery and Lewis Convergence diagnostic:", "\n") 
       print(convergence) 
@@ -555,29 +558,29 @@ for (i in 1:nvariable)
       
       ## Estimating the accuracy
       if (Fix & Nfix>1) {genetic_value_accuracy[j,k]<-cor(genetic_value, matrix(phenotest-args$fixtest%*%args$fix_effect[,k]))
-      if (env & Nenv>1) {prediction_accuracy[j,k]<-cor(prediction, matrix(phenotest-args$fixtest%*%args$fix_effect[,k]))
+      if (Env & Nenv>1) {prediction_accuracy[j,k]<-cor(prediction, matrix(phenotest-args$fixtest%*%args$fix_effect[,k]))
       genotypic_value_accuracy[j,k]<-cor(genotypic_value, matrix(phenotest-args$fixtest%*%args$fix_effect[,k]))}
       } else {
         genetic_value_accuracy[j,k]<-cor(genetic_value, matrix(phenotest))
-        if (env & Nenv>1) {prediction_accuracy[j,k]<-cor(prediction, matrix(phenotest))
+        if (Env & Nenv>1) {prediction_accuracy[j,k]<-cor(prediction, matrix(phenotest))
         genotypic_value_accuracy[j,k]<-cor(genotypic_value, matrix(phenotest))}
       }
     }
-    args$fixed_effects[,j]<-as.matrix(rowMeans(args$fix_effect, na.rm = TRUE))
-    args$environment_effects[,j]<-as.matrix(rowMeans(args$env_effect, na.rm = TRUE))
-    environment_SD_effects[,j]<-as.matrix(rowMeans(env_SD_effect, na.rm = TRUE))
-    args$genetic_effects[,j]<-as.matrix(rowMeans(args$gen_effect, na.rm = TRUE))
-    genetic_SD_effects[,j]<-as.matrix(rowMeans(gen_SD_effect, na.rm = TRUE))
-    args$additive_effects[,j]<-as.matrix(rowMeans(args$add_effect, na.rm = TRUE))
-    additive_SD_effects[,j]<-as.matrix(rowMeans(add_SD_effect, na.rm = TRUE))
-    args$dominance_effects[,j]<-as.matrix(rowMeans(args$dom_effect, na.rm = TRUE))
-    dominance_SD_effects[,j]<-as.matrix(rowMeans(dom_SD_effect, na.rm = TRUE))
-    args$GeneticxEnvironment_effects[,j]<-as.matrix(rowMeans(args$GxE_effect, na.rm = TRUE))
-    GeneticxEnvironment_SD_effects[,j]<-as.matrix(rowMeans(GxE_SD_effect, na.rm = TRUE))
-    args$AdditivexEnvironment_effects[,j]<-as.matrix(rowMeans(args$AxE_effect, na.rm = TRUE))
-    AdditivexEnvironment_SD_effects[,j]<-as.matrix(rowMeans(AxE_SD_effect, na.rm = TRUE))
-    args$DominancexEnvironment_effects[,j]<-as.matrix(rowMeans(args$DxE_effect, na.rm = TRUE))
-    DominancexEnvironment_SD_effects[,j]<-as.matrix(rowMeans(DxE_SD_effect, na.rm = TRUE))
+    if (Fix & Nfix>1) {args$fixed_effects[,j]<-as.matrix(rowMeans(args$fix_effect, na.rm = TRUE))}
+    if (Env & Nenv>1) {args$environment_effects[,j]<-as.matrix(rowMeans(args$env_effect, na.rm = TRUE))
+    environment_SD_effects[,j]<-as.matrix(rowMeans(env_SD_effect, na.rm = TRUE))}
+    if (Gen) {args$genetic_effects[,j]<-as.matrix(rowMeans(args$gen_effect, na.rm = TRUE))
+    genetic_SD_effects[,j]<-as.matrix(rowMeans(gen_SD_effect, na.rm = TRUE))}
+    if (Add) {args$additive_effects[,j]<-as.matrix(rowMeans(args$add_effect, na.rm = TRUE))
+    additive_SD_effects[,j]<-as.matrix(rowMeans(add_SD_effect, na.rm = TRUE))}
+    if (Dom) {args$dominance_effects[,j]<-as.matrix(rowMeans(args$dom_effect, na.rm = TRUE))
+    dominance_SD_effects[,j]<-as.matrix(rowMeans(dom_SD_effect, na.rm = TRUE))}
+    if (Env & Nenv>1 & Gen) {args$GeneticxEnvironment_effects[,j]<-as.matrix(rowMeans(args$GxE_effect, na.rm = TRUE))
+    GeneticxEnvironment_SD_effects[,j]<-as.matrix(rowMeans(GxE_SD_effect, na.rm = TRUE))}
+    if (Env & Nenv>1 & Add) {args$AdditivexEnvironment_effects[,j]<-as.matrix(rowMeans(args$AxE_effect, na.rm = TRUE))
+    AdditivexEnvironment_SD_effects[,j]<-as.matrix(rowMeans(AxE_SD_effect, na.rm = TRUE))}
+    if (Env & Nenv>1 & Dom) {args$DominancexEnvironment_effects[,j]<-as.matrix(rowMeans(args$DxE_effect, na.rm = TRUE))
+    DominancexEnvironment_SD_effects[,j]<-as.matrix(rowMeans(DxE_SD_effect, na.rm = TRUE))}
   }
   
   cat(" -------------------------------------------------------------------", "\n") 
@@ -588,204 +591,204 @@ for (i in 1:nvariable)
   cat("-----Genetic accuracy:", "\n") 
   print(genetic_value_accuracy) 
   cat("-----Mean of Genetic accuracy:", "\n") 
-  print(mean(genetic_value_accuracy)) 
+  print(mean(genetic_value_accuracy, na.rm = TRUE)) 
   cat("-----Highest Posterior Density Intervals:", "\n") 
   print(emp.hpd(rowMeans(genetic_value_accuracy))) 
   cat("\n") 
-  cat("-----Prediction accuracy:", "\n") 
+  if (Env & Nenv>1) {cat("-----Prediction accuracy:", "\n") 
   print(prediction_accuracy)
   cat("-----Mean of Prediction accuracy:", "\n") 
-  print(mean(prediction_accuracy))
+  print(mean(prediction_accuracy, na.rm = TRUE))
   cat("-----Highest Posterior Density Intervals:", "\n") 
   print(emp.hpd(rowMeans(prediction_accuracy))) 
   cat("\n") 
   cat("-----Genotypic + GxE accuracy:", "\n") 
   print(genotypic_value_accuracy)
   cat("-----Mean of Genotypic + GxE accuracy:", "\n") 
-  print(mean(genotypic_value_accuracy))
+  print(mean(genotypic_value_accuracy,  na.rm = TRUE))
   cat("-----Highest Posterior Density Intervals:", "\n") 
   print(emp.hpd(rowMeans(genotypic_value_accuracy))) 
-  cat("\n") 
+  cat("\n") }
   cat("-----Residual variance:", "\n") 
   print(residual_variance)
   cat("-----Mean of residual variance:", "\n") 
-  print(mean(residual_variance))
+  print(mean(residual_variance,  na.rm = TRUE))
   cat("-----Highest Posterior Density Intervals:", "\n") 
   print(emp.hpd(rowMeans(residual_variance))) 
   cat("\n") 
-  if (Fix & ncol(fixtrain)>1) {cat("-----Fixed effects:", "\n") 
+  if (Fix & Nfix>1) {cat("-----Fixed effects:", "\n") 
     print(args$fixed_effects)
     cat("-----Mean of fixed effects:", "\n") 
-    print(mean(args$fixed_effects))
+    print(mean(args$fixed_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$fixed_effects))) 
+    print(emp.hpd(rowMeans(args$fixed_effects,  na.rm = TRUE))) 
     cat("\n")}
-  if (Env & ncol(envtrain)>1) {cat("-----Environmental effects:", "\n") 
+  if (Env & Nenv>1) {cat("-----Environmental effects:", "\n") 
     print(args$environment_effects)
     cat("-----Mean of environmental effects:", "\n") 
-    print(mean(args$environment_effects))
+    print(mean(args$environment_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$environment_effects)))
+    print(emp.hpd(rowMeans(args$environment_effects,  na.rm = TRUE)))
     cat("\n")
     cat("-----Environmental standard deviation:", "\n") 
     print(environment_SD_effects)
     cat("-----Mean of environmental standard deviation:", "\n") 
-    print(mean(environment_SD_effects))
+    print(mean(environment_SD_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(environment_SD_effects)))
+    print(emp.hpd(rowMeans(environment_SD_effects,  na.rm = TRUE)))
     cat("\n")
-    plot((rowMeans(args$environment_effects))^2, ylab='Estimated Squared-Environment Effect',
+    plot((rowMeans(args$environment_effects,  na.rm = TRUE))^2, ylab='Estimated Squared-Environment Effect',
          type='o',cex=.5,col=4,main='Environment Effects')
     cat("-----Environmental variance:", "\n") 
     print(environment_variance)
     cat("-----Mean of environmental variance:", "\n") 
-    print(mean(environment_variance))
+    print(mean(environment_variance,  na.rm = TRUE))
     cat("\n")
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(environment_variance)))}
+    print(emp.hpd(rowMeans(environment_variance,  na.rm = TRUE)))}
   if (Gen) {cat("-----Genetic effects:", "\n") 
     print(args$genetic_effects)
     cat("-----Mean of Genetic effects:", "\n") 
-    print(mean(args$genetic_effects))
+    print(mean(args$genetic_effects, na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$genetic_effects)))
+    print(emp.hpd(rowMeans(args$genetic_effects,  na.rm = TRUE)))
     cat("\n")
     cat("-----Genetic standard deviation:", "\n") 
     print(genetic_SD_effects)
     cat("-----Mean of Genetic standard deviation:", "\n") 
-    print(mean(genetic_SD_effects))
+    print(mean(genetic_SD_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(genetic_SD_effects)))
+    print(emp.hpd(rowMeans(genetic_SD_effects,  na.rm = TRUE)))
     cat("\n")
-    plot((rowMeans(args$genetic_effects))^2, ylab='Estimated Squared-Genetic Effect',
+    plot((rowMeans(args$genetic_effects,  na.rm = TRUE))^2, ylab='Estimated Squared-Genetic Effect',
          type='o',cex=.5,col=4,main='Genetic Effects')
     cat("-----Genetic variance:", "\n") 
     print(genetic_variance)
     cat("-----Mean of Genetic variance:", "\n") 
-    print(mean(genetic_variance))
+    print(mean(genetic_variance,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(genetic_variance)))
+    print(emp.hpd(rowMeans(genetic_variance,  na.rm = TRUE)))
     cat("\n")}
   if (Add) {cat("-----Additive effects:", "\n") 
     print(args$additive_effects)
     cat("-----Mean of additive effects:", "\n") 
-    print(mean(args$additive_effects))
+    print(mean(args$additive_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$additive_effects)))
+    print(emp.hpd(rowMeans(args$additive_effects,  na.rm = TRUE)))
     cat("\n")
     cat("-----Additive standard deviation:", "\n") 
     print(additive_SD_effects)
     cat("-----Mean of Additive standard deviation:", "\n") 
-    print(mean(additive_SD_effects))
+    print(mean(additive_SD_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(additive_SD_effects)))
+    print(emp.hpd(rowMeans(additive_SD_effects,  na.rm = TRUE)))
     cat("\n")
-    plot((rowMeans(args$additive_effects))^2, ylab='Estimated Squared-Additive Effect',
+    plot((rowMeans(args$additive_effects,  na.rm = TRUE))^2, ylab='Estimated Squared-Additive Effect',
          type='o',cex=.5,col=4,main='Additive Effects')
     cat("-----Additive variance:", "\n") 
     print(additive_variance)
     cat("-----Mean of Additive variance:", "\n") 
-    print(mean(additive_variance))
+    print(mean(additive_variance,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(additive_variance)))
+    print(emp.hpd(rowMeans(additive_variance,  na.rm = TRUE)))
     cat("\n")}
   if (Dom) {cat("-----Dominance effects:", "\n") 
     print(args$dominance_effects)
     cat("-----Mean of dominance effects:", "\n") 
-    print(mean(args$dominance_effects))
+    print(mean(args$dominance_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$dominance_effects)))
+    print(emp.hpd(rowMeans(args$dominance_effects,  na.rm = TRUE)))
     cat("\n")
     cat("-----Dominance standard deviation:", "\n") 
     print(dominance_SD_effects)
     cat("-----Mean of dominance standard deviation:", "\n") 
-    print(mean(dominance_SD_effects))
+    print(mean(dominance_SD_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(dominance_SD_effects)))
+    print(emp.hpd(rowMeans(dominance_SD_effects,  na.rm = TRUE)))
     cat("\n")
-    plot((rowMeans(args$dominance_effects))^2, ylab='Estimated Squared-Dominance Effect',
+    plot((rowMeans(args$dominance_effects,  na.rm = TRUE))^2, ylab='Estimated Squared-Dominance Effect',
          type='o',cex=.5,col=4,main='Dominance Effects')
     cat("-----Dominance variance:", "\n") 
     print(dominance_variance)
     cat("-----Mean of dominance variance:", "\n") 
-    print(mean(dominance_variance))
+    print(mean(dominance_variance,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(dominance_variance)))
+    print(emp.hpd(rowMeans(dominance_variance,  na.rm = TRUE)))
     cat("\n")
   }
-  if (Env & Gen & ncol(envtrain)>1) {cat("-----GeneticxEnvironment effects:", "\n") 
+  if (Env & Gen & Nenv>1) {cat("-----GeneticxEnvironment effects:", "\n") 
     print(args$GeneticxEnvironment_effects)
     cat("-----Mean of GeneticxEnvironment effects:", "\n") 
-    print(mean(args$GeneticxEnvironment_effects))
+    print(mean(args$GeneticxEnvironment_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$GeneticxEnvironment_effects)))
+    print(emp.hpd(rowMeans(args$GeneticxEnvironment_effects,  na.rm = TRUE)))
     cat("\n")
     cat("-----GeneticxEnvironment standard deviation:", "\n") 
     print(GeneticxEnvironment_SD_effects)
     cat("-----Mean of GeneticxEnvironment standard deviation:", "\n") 
-    print(mean(GeneticxEnvironment_SD_effects))
+    print(mean(GeneticxEnvironment_SD_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(GeneticxEnvironment_SD_effects)))
+    print(emp.hpd(rowMeans(GeneticxEnvironment_SD_effects,  na.rm = TRUE)))
     cat("\n")
-    plot((rowMeans(args$GeneticxEnvironment_effects))^2, ylab='Estimated Squared-GxE Effect',
+    plot((rowMeans(args$GeneticxEnvironment_effects,  na.rm = TRUE))^2, ylab='Estimated Squared-GxE Effect',
          type='o',cex=.5,col=4,main='GxE Effects')
     cat("-----GeneticxEnvironment variance:", "\n") 
     print(GeneticxEnvironment_variance)
     cat("-----Mean of GeneticxEnvironment variance:", "\n") 
-    print(mean(GeneticxEnvironment_variance))
+    print(mean(GeneticxEnvironment_variance,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(GeneticxEnvironment_variance)))
+    print(emp.hpd(rowMeans(GeneticxEnvironment_variance,  na.rm = TRUE)))
     cat("\n")}
-  if (Env & Add & ncol(envtrain)>1) {cat("-----AdditivexEnvironment effects:", "\n") 
+  if (Env & Add & Nenv>1) {cat("-----AdditivexEnvironment effects:", "\n") 
     print(args$AdditivexEnvironment_effects)
     cat("-----Mean of AdditivexEnvironment effects:", "\n") 
-    print(mean(args$AdditivexEnvironment_effects))
+    print(mean(args$AdditivexEnvironment_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$AdditivexEnvironment_effects)))
+    print(emp.hpd(rowMeans(args$AdditivexEnvironment_effects,  na.rm = TRUE)))
     cat("\n")
     cat("-----AdditivexEnvironment standard deviation:", "\n") 
     print(AdditivexEnvironment_SD_effects)
     cat("-----Mean of AdditivexEnvironment standard deviation:", "\n") 
-    print(mean(AdditivexEnvironment_SD_effects))
+    print(mean(AdditivexEnvironment_SD_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(AdditivexEnvironment_SD_effects)))
+    print(emp.hpd(rowMeans(AdditivexEnvironment_SD_effects,  na.rm = TRUE)))
     cat("\n")
-    plot((rowMeans(args$AdditivexEnvironment_effects))^2, ylab='Estimated Squared-AxE Effect',
+    plot((rowMeans(args$AdditivexEnvironment_effects,  na.rm = TRUE))^2, ylab='Estimated Squared-AxE Effect',
          type='o',cex=.5,col=4,main='AxE Effects')
     cat("-----AdditivexEnvironment variance:", "\n") 
     print(AdditivexEnvironment_variance)
     cat("-----Mean of AdditivexEnvironment variance:", "\n") 
-    print(mean(AdditivexEnvironment_variance))
+    print(mean(AdditivexEnvironment_variance,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(AdditivexEnvironment_variance)))
+    print(emp.hpd(rowMeans(AdditivexEnvironment_variance,  na.rm = TRUE)))
     cat("\n")}
-  if (Env & Dom & ncol(envtrain)>1) {cat("-----DominancexEnvironment effects:", "\n") 
+  if (Env & Dom & Nenv>1) {cat("-----DominancexEnvironment effects:", "\n") 
     print(args$DominancexEnvironment_effects)
     cat("-----Mean of DominancexEnvironment effects:", "\n") 
-    print(mean(args$DominancexEnvironment_effects))
+    print(mean(args$DominancexEnvironment_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(args$DominancexEnvironment_effects)))
+    print(emp.hpd(rowMeans(args$DominancexEnvironment_effects,  na.rm = TRUE)))
     cat("\n")
     cat("-----DominancexEnvironment standard deviation:", "\n") 
     print(DominancexEnvironment_SD_effects)
     cat("-----Mean of DominancexEnvironment standard deviation:", "\n") 
-    print(mean(DominancexEnvironment_SD_effects))
+    print(mean(DominancexEnvironment_SD_effects,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(DominancexEnvironment_SD_effects)))
+    print(emp.hpd(rowMeans(DominancexEnvironment_SD_effects,  na.rm = TRUE)))
     cat("\n")
-    plot((rowMeans(args$DominancexEnvironment_effects))^2, ylab='Estimated Squared-DxE Effect',
+    plot((rowMeans(args$DominancexEnvironment_effects,  na.rm = TRUE))^2, ylab='Estimated Squared-DxE Effect',
          type='o',cex=.5,col=4,main='DxE Effects')
     cat("-----DominancexEnvironment variance:", "\n") 
     print(DominancexEnvironment_variance)
     cat("-----Mean of AdditivexEnvironment variance:", "\n") 
-    print(mean(DominancexEnvironment_variance))
+    print(mean(DominancexEnvironment_variance,  na.rm = TRUE))
     cat("-----Highest Posterior Density Intervals:", "\n") 
-    print(emp.hpd(rowMeans(DominancexEnvironment_variance)))
+    print(emp.hpd(rowMeans(DominancexEnvironment_variance,  na.rm = TRUE)))
     cat("\n")}
   cat("-----Deviance information criteria:", "\n") 
   print(DIC)
   cat("-----Mean of Deviance information criteria:", "\n") 
-  print(mean(DIC))
+  print(mean(DIC,  na.rm = TRUE))
   cat("\n")
   
   ##Calculating the genetic value for all families
@@ -797,7 +800,7 @@ for (i in 1:nvariable)
   cat("\n")}
   
   ##Calculating the genetic value for all individuals
-  genotypic_value<-ind.pred(args=args)
+  if (Env & Nenv>1) {genotypic_value<-ind.pred(args=args)
   for(l in 1:ncol(args$Env))
   {
     a<-1+((l-1)*ncol(args$fix)*ncol(args$Gen))
@@ -814,65 +817,65 @@ for (i in 1:nvariable)
     cat("\n")
     plot(gv[,7]~pheno2[,l+3],xlab='Observed',ylab='Predicted',col=2, main=paste('Environment ', l),
          xlim=c(min(pheno2[,l+3]), max(pheno[,l+3])),ylim=c(min(gv[,7]),max(gv[,7]))) 
-    abline(a=0,b=1,col=4,lwd=2)
+    abline(a=0,b=1,col=4,lwd=2)}
   }
   
   write.table(convergence, paste("convergence", i ,j ,k), quote = FALSE, row.names = FALSE)
   write.table(genetic_value_accuracy, paste("genetic_value_accuracy", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(genetic_value_accuracy)), paste("CI_genetic_value_accuracy", i), quote = FALSE, row.names = FALSE)
-  write.table(prediction_accuracy, paste("prediction_accuracy", i), quote = FALSE, row.names = FALSE)
+  if (Env & Nenv>1){write.table(prediction_accuracy, paste("prediction_accuracy", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(prediction_accuracy)), paste("CI_prediction_accuracy", i), quote = FALSE, row.names = FALSE)
   write.table(genotypic_value_accuracy, paste("genotypic_value_accuracy", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(genotypic_value_accuracy)), paste("CI_genotypic_value_accuracy", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(genotypic_value_accuracy)), paste("CI_genotypic_value_accuracy", i), quote = FALSE, row.names = FALSE)}
   write.table(residual_variance, paste("residual_variance", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(residual_variance)), paste("CI_residual_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(fixed_effects, paste("fixed_effectse", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(fixed_effects)), paste("CI_fixed_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(environment_effects, paste("environment_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(environment_effects)), paste("CI_environment_effects", i), quote = FALSE, row.names = FALSE)
+  if (Fix & Nfix>1){write.table(args$fixed_effects, paste("fixed_effectse", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$fixed_effects)), paste("CI_fixed_effects", i), quote = FALSE, row.names = FALSE)}
+  if (Env & Nenv>1){write.table(args$environment_effects, paste("environment_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$environment_effects)), paste("CI_environment_effects", i), quote = FALSE, row.names = FALSE)
   write.table(environment_SD_effects, paste("environment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(environment_SD_effects)), paste("CI_environment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(environment_variance, paste("environment_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(environment_variance)), paste("CI_environment_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(genetic_effects, paste("genetic_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(genetic_effects)), paste("CI_genetic_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(environment_variance)), paste("CI_environment_variance", i), quote = FALSE, row.names = FALSE)}
+  if (Gen){write.table(args$genetic_effects, paste("genetic_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$genetic_effects)), paste("CI_genetic_effects", i), quote = FALSE, row.names = FALSE)
   write.table(genetic_SD_effects, paste("genetic_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(genetic_SD_effects)), paste("CI_genetic_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(genetic_variance, paste("genetic_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(genetic_variance)), paste("CI_genetic_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(additive_effects, paste("addtive_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(additive_effects)), paste("CI_addtive_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(genetic_variance)), paste("CI_genetic_variance", i), quote = FALSE, row.names = FALSE)}
+  if (Add){write.table(args$additive_effects, paste("addtive_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$additive_effects)), paste("CI_addtive_effects", i), quote = FALSE, row.names = FALSE)
   write.table(additive_SD_effects, paste("addtive_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(additive_SD_effects)), paste("CI_addtive_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(additive_variance, paste("addtive_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(additive_variance)), paste("CI_addtive_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(dominance_effects, paste("dominance_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(dominance_effects)), paste("CI_dominance_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(additive_variance)), paste("CI_addtive_variance", i), quote = FALSE, row.names = FALSE)}
+  if (Dom){write.table(args$dominance_effects, paste("dominance_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$dominance_effects)), paste("CI_dominance_effects", i), quote = FALSE, row.names = FALSE)
   write.table(dominance_SD_effects, paste("dominance_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(dominance_SD_effects)), paste("CI_dominance_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(dominance_variance, paste("dominance_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(dominance_variance)), paste("CI_dominance_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(GeneticxEnvironment_effects, paste("GeneticxEnvironment_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(GeneticxEnvironment_effects)), paste("CI_GeneticxEnvironment_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(dominance_variance)), paste("CI_dominance_variance", i), quote = FALSE, row.names = FALSE)}
+  if (Env & Nenv>1 & Gen){write.table(args$GeneticxEnvironment_effects, paste("GeneticxEnvironment_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$GeneticxEnvironment_effects)), paste("CI_GeneticxEnvironment_effects", i), quote = FALSE, row.names = FALSE)
   write.table(GeneticxEnvironment_SD_effects, paste("GeneticxEnvironment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(GeneticxEnvironment_SD_effects)), paste("CI_GeneticxEnvironment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(GeneticxEnvironment_variance, paste("GeneticxEnvironment_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(GeneticxEnvironment_variance)), paste("CI_GeneticxEnvironment_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(AdditivexEnvironment_effects, paste("AdditivexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(AdditivexEnvironment_effects)), paste("CI_AdditivexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(GeneticxEnvironment_variance)), paste("CI_GeneticxEnvironment_variance", i), quote = FALSE, row.names = FALSE)}
+  if (Env & Nenv>1 & Add){write.table(args$AdditivexEnvironment_effects, paste("AdditivexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$AdditivexEnvironment_effects)), paste("CI_AdditivexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
   write.table(AdditivexEnvironment_SD_effects, paste("AdditivexEnvironment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(AdditivexEnvironment_SD_effects)), paste("CI_AdditivexEnvironment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(AdditivexEnvironment_variance, paste("AdditivexEnvironment_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(AdditivexEnvironment_variance)), paste("CI_AdditivexEnvironment_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(DominancexEnvironment_effects, paste("DominancexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(DominancexEnvironment_effects)), paste("CI_DominancexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(AdditivexEnvironment_variance)), paste("CI_AdditivexEnvironment_variance", i), quote = FALSE, row.names = FALSE)}
+  if (Env & Nenv>1 & Add){write.table(args$DominancexEnvironment_effects, paste("DominancexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(args$DominancexEnvironment_effects)), paste("CI_DominancexEnvironment_effects", i), quote = FALSE, row.names = FALSE)
   write.table(DominancexEnvironment_SD_effects, paste("DominancexEnvironment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(emp.hpd(rowMeans(DominancexEnvironment_SD_effects)), paste("CI_DominancexEnvironment_SD_effects", i), quote = FALSE, row.names = FALSE)
   write.table(DominancexEnvironment_variance, paste("DominancexEnvironment_variance", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(rowMeans(DominancexEnvironment_variance)), paste("CI_DominancexEnvironment_variance", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(rowMeans(DominancexEnvironment_variance)), paste("CI_DominancexEnvironment_variance", i), quote = FALSE, row.names = FALSE)}
   write.table(DIC, paste("DIC", i), quote = FALSE, row.names = FALSE)
-  write.table(family_genotypic_value, paste("family_genotypic_value", i), quote = FALSE, row.names = FALSE)
-  write.table(emp.hpd(family_genotypic_value[,1]), paste("CI_family_genotypic_value", i), quote = FALSE, row.names = FALSE)
+  if (Fam) {write.table(family_genotypic_value, paste("family_genotypic_value", i), quote = FALSE, row.names = FALSE)
+  write.table(emp.hpd(family_genotypic_value[,1]), paste("CI_family_genotypic_value", i), quote = FALSE, row.names = FALSE)}
 }
 
 #Disconnect from the output file
